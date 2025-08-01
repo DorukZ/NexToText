@@ -8,6 +8,22 @@
 </head>
 <body class="bg-gradient-to-b from-indigo-50 to-gray-50 text-gray-800 font-sans">
 
+  <!-- Navbar Başlangıç -->
+  <header class="w-full bg-white shadow-md fixed top-0 left-0 z-50">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+      <a href="#" class="text-xl font-bold text-indigo-600">NexToTask</a>
+      <nav class="space-x-6 text-sm font-medium text-gray-700 hidden md:inline-block">
+        <a href="#how-it-works" class="hover:text-indigo-600">Nasıl Çalışır?</a>
+        <a href="#features" class="hover:text-indigo-600">Özellikler</a>
+        <a href="#pricing" class="hover:text-indigo-600">Fiyatlandırma</a>
+        <a href="#contact" class="hover:text-indigo-600">İletişim</a>
+      </nav>
+      <a href="#" class="hidden md:inline-block bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition">Giriş Yap</a>
+    </div>
+  </header>
+  <!-- Navbar Bitiş -->
+
+  <main class="pt-24">
   <!-- Hero Section Başlangıç -->
   <section class="min-h-screen flex flex-col justify-center items-center px-6 py-20 text-center">
     <div class="max-w-3xl w-full">
@@ -40,18 +56,18 @@
         </div>
       </div>
 
-      <!-- Hero Görseli -->
+      <!-- Hero Görseli (Geliştirilmiş Mockup) -->
       <div class="mt-12">
-        <img src="https://dummyimage.com/800x450/e5e7eb/aaa&text=NexToTask+Görev+Arayüzü" 
+        <img src="https://www.svgrepo.com/show/508503/kanban-board.svg" 
              alt="Görev Panosu Mockup" 
-             class="rounded-2xl shadow-xl border border-gray-200 mx-auto max-w-full">
+             class="rounded-2xl shadow-xl border border-gray-200 mx-auto max-w-full bg-white">
       </div>
     </div>
   </section>
   <!-- Hero Section Bitiş -->
 
   <!-- How It Works Section Başlangıç -->
-  <section class="py-20 bg-white">
+  <section id="how-it-works" class="py-20 bg-white">
     <div class="max-w-6xl mx-auto px-4 text-center">
       <h2 class="text-3xl font-semibold text-gray-900 mb-12">NexToTask Nasıl Çalışır?</h2>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
@@ -76,7 +92,7 @@
   <!-- How It Works Section Bitiş -->
 
   <!-- Features Section Başlangıç -->
-  <section class="py-16 bg-white">
+  <section id="features" class="py-16 bg-white">
     <div class="max-w-6xl mx-auto px-4 text-center">
       <h2 class="text-3xl font-semibold text-gray-900 mb-8">Neden NexToTask?</h2>
       <div class="grid gap-8 sm:grid-cols-2 md:grid-cols-3">
@@ -100,5 +116,6 @@
   </section>
   <!-- Features Section Bitiş -->
 
+  </main>
 </body>
 </html>
