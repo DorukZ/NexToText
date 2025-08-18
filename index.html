@@ -6,61 +6,64 @@
   <title>NexToTask – AI Destekli Görev Yönetimi</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-gradient-to-b from-indigo-50 to-gray-50 text-gray-800 font-sans">
+<body class="bg-gradient-to-b from-green-50 to-gray-50 text-gray-800 font-sans">
 
   <!-- Navbar Başlangıç -->
   <header class="w-full bg-white shadow-md fixed top-0 left-0 z-50">
     <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-      <a href="#" class="text-xl font-bold text-indigo-600">NexToTask</a>
+      <a href="#" class="text-xl font-bold text-green-600">NexToTask</a>
       <nav class="space-x-6 text-sm font-medium text-gray-700 hidden md:inline-block">
-        <a href="#how-it-works" class="hover:text-indigo-600">Nasıl Çalışır?</a>
-        <a href="#features" class="hover:text-indigo-600">Özellikler</a>
-        <a href="#pricing" class="hover:text-indigo-600">Fiyatlandırma</a>
-        <a href="#contact" class="hover:text-indigo-600">İletişim</a>
+        <a href="#how-it-works" class="hover:text-green-600">Nasıl Çalışır?</a>
+        <a href="#features" class="hover:text-green-600">Özellikler</a>
+        <a href="#pricing" class="hover:text-green-600">Fiyatlandırma</a>
+        <a href="#contact" class="hover:text-green-600">İletişim</a>
       </nav>
-      <a href="#" class="hidden md:inline-block bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition">Giriş Yap</a>
+      <a href="#" class="hidden md:inline-block bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition">Giriş Yap</a>
     </div>
   </header>
   <!-- Navbar Bitiş -->
 
   <main class="pt-24">
   <!-- Hero Section Başlangıç -->
-  <section class="min-h-screen flex flex-col justify-center items-center px-6 py-20 text-center">
-    <div class="max-w-3xl w-full">
-      <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight mb-4">
-        Görevlerinizi Akıllıca Parçalayın,<br class="hidden sm:inline"> İşlerinizi Uçurun.
-      </h1>
-      <p class="text-lg sm:text-xl text-gray-600 mb-8">
-        NexToTask, içerik üreticileri ve girişimciler için yapay zekâ destekli görev yönetim aracıdır. <br class="hidden sm:inline"> Sadece bir fikir yazın — yapay zekâ geri kalan adımları sizin için oluşturur.
-      </p>
-      <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mb-10">
-        <a href="#" class="bg-indigo-600 text-white px-6 py-3 rounded-xl text-lg shadow hover:shadow-lg transform hover:-translate-y-0.5 transition-all">
-          Ücretsiz 7 Gün Deneyin
-        </a>
-        <a href="#" class="text-indigo-600 font-medium underline hover:text-indigo-800 text-base">Demo Görüntüle</a>
+  <section class="min-h-screen flex flex-col justify-center items-center px-6 py-20">
+    <div class="max-w-7xl w-full grid md:grid-cols-2 gap-10 items-center">
+      <!-- Metin Alanı -->
+      <div class="text-center md:text-left">
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
+          Görevlerinizi Akıllıca Parçalayın,<br class="hidden sm:inline"> İşlerinizi Uçurun.
+        </h1>
+        <p class="text-lg sm:text-xl text-gray-600 mb-8">
+          NexToTask, içerik üreticileri ve girişimciler için yapay zekâ destekli görev yönetim aracıdır. <br class="hidden sm:inline"> Sadece bir fikir yazın — yapay zekâ geri kalan adımları sizin için oluşturur.
+        </p>
+        <div class="flex flex-col sm:flex-row sm:justify-start justify-center items-center gap-4">
+          <a href="#" class="bg-green-600 text-white px-6 py-3 rounded-xl text-lg shadow hover:shadow-lg transform hover:-translate-y-0.5 transition-all">
+            Ücretsiz 7 Gün Deneyin
+          </a>
+          <a href="#" class="text-green-600 font-medium underline hover:text-green-800 text-base">Demo Görüntüle</a>
+        </div>
+
+        <!-- Alt İkonlu Özellikler Satırı -->
+        <div class="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm text-gray-600">
+          <div class="flex flex-col items-center sm:items-start">
+            <div class="text-3xl mb-1">🤖</div>
+            <span>AI ile görevleri otomatikleştir</span>
+          </div>
+          <div class="flex flex-col items-center sm:items-start">
+            <div class="text-3xl mb-1">👥</div>
+            <span>Ekiple görev paylaşımı yap</span>
+          </div>
+          <div class="flex flex-col items-center sm:items-start">
+            <div class="text-3xl mb-1">🗓️</div>
+            <span>Takvimle organize çalış</span>
+          </div>
+        </div>
       </div>
 
-      <!-- Alt İkonlu Özellikler Satırı -->
-      <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm text-gray-600">
-        <div class="flex flex-col items-center">
-          <div class="text-3xl mb-1">🤖</div>
-          <span>AI ile görevleri otomatikleştir</span>
-        </div>
-        <div class="flex flex-col items-center">
-          <div class="text-3xl mb-1">👥</div>
-          <span>Ekiple görev paylaşımı yap</span>
-        </div>
-        <div class="flex flex-col items-center">
-          <div class="text-3xl mb-1">🗓️</div>
-          <span>Takvimle organize çalış</span>
-        </div>
-      </div>
-
-      <!-- Hero Görseli (Geliştirilmiş Mockup) -->
-      <div class="mt-12">
+      <!-- Görsel Alanı -->
+      <div>
         <img src="https://www.svgrepo.com/show/508503/kanban-board.svg" 
              alt="Görev Panosu Mockup" 
-             class="rounded-2xl shadow-xl border border-gray-200 mx-auto max-w-full bg-white">
+             class="rounded-2xl shadow-xl border border-gray-200 mx-auto bg-white">
       </div>
     </div>
   </section>
@@ -71,17 +74,17 @@
     <div class="max-w-6xl mx-auto px-4 text-center">
       <h2 class="text-3xl font-semibold text-gray-900 mb-12">NexToTask Nasıl Çalışır?</h2>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-        <div class="p-6 bg-indigo-50 rounded-xl shadow-md">
+        <div class="p-6 bg-green-50 rounded-xl shadow-md">
           <div class="text-4xl mb-4">🧠</div>
           <h3 class="text-xl font-bold mb-2">1. Fikrinizi Yazın</h3>
           <p class="text-gray-600">Blog, video, satış hedefi… Sadece büyük görevinizi girin. Gerisini AI halleder.</p>
         </div>
-        <div class="p-6 bg-indigo-50 rounded-xl shadow-md">
+        <div class="p-6 bg-green-50 rounded-xl shadow-md">
           <div class="text-4xl mb-4">⚙️</div>
           <h3 class="text-xl font-bold mb-2">2. Görevler Otomatik Oluşsun</h3>
           <p class="text-gray-600">Yapay zekâ, görevlerinizi mantıklı adımlara ayırır. Hazır alt görev listesi elinizde.</p>
         </div>
-        <div class="p-6 bg-indigo-50 rounded-xl shadow-md">
+        <div class="p-6 bg-green-50 rounded-xl shadow-md">
           <div class="text-4xl mb-4">🚀</div>
           <h3 class="text-xl font-bold mb-2">3. Ekiple Paylaşın ve İlerle</h3>
           <p class="text-gray-600">Panonuzu ekip arkadaşlarınızla paylaşın, işleri bölüştürün ve üretime geçin.</p>
@@ -97,17 +100,17 @@
       <h2 class="text-3xl font-semibold text-gray-900 mb-8">Neden NexToTask?</h2>
       <div class="grid gap-8 sm:grid-cols-2 md:grid-cols-3">
         <div class="p-6 bg-gray-100 rounded-xl shadow">
-          <div class="text-indigo-500 text-4xl mb-4">🤖</div>
+          <div class="text-green-500 text-4xl mb-4">🤖</div>
           <h3 class="text-xl font-semibold mb-2">AI Destekli Alt Görevler</h3>
           <p class="text-gray-600">Büyük görevleri sizin yerinize adım adım parçalayan yapay zekâ.</p>
         </div>
         <div class="p-6 bg-gray-100 rounded-xl shadow">
-          <div class="text-indigo-500 text-4xl mb-4">👥</div>
+          <div class="text-green-500 text-4xl mb-4">👥</div>
           <h3 class="text-xl font-semibold mb-2">Ekiplerle Uyumlu</h3>
           <p class="text-gray-600">Görev paylaşımı, yorumlar ve ekip görünümü ile organize iş akışı.</p>
         </div>
         <div class="p-6 bg-gray-100 rounded-xl shadow">
-          <div class="text-indigo-500 text-4xl mb-4">🗓️</div>
+          <div class="text-green-500 text-4xl mb-4">🗓️</div>
           <h3 class="text-xl font-semibold mb-2">Takvim Entegrasyonu</h3>
           <p class="text-gray-600">Görevleri zamanlayın, teslim tarihlerini kaçırmayın.</p>
         </div>
