@@ -25,7 +25,6 @@
   .chip .x{ cursor:pointer; opacity:.7 } .chip .x:hover{ opacity:1 }
   .chip[draggable="true"]{ user-select:none }
   .menu{ position:absolute; inset:auto auto auto 0; z-index:30; background:#fff; border:1px solid rgba(0,0,0,.08); box-shadow:0 14px 35px rgba(0,0,0,.08); border-radius:12px; padding:8px; width:260px; max-height:240px; overflow:auto }
-  /* Mention */
   .mention{ color:#065F46; font-weight:600 }
   #focusOverlay{ backdrop-filter:blur(2px) }
 </style>
@@ -114,7 +113,7 @@
         <button class="btn bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-medium md:col-span-12">Ekle</button>
       </form>
 
-      <p class="text-xs text-gray-400 mt-2">↩️ <b>Enter</b> ile ekleyin. Açıklamada <b>Ctrl+Enter</b> gönderir.</p>
+      <p class="text-xs text-gray-400 mt-2">↩️ <b>Enter</b> ile ekleyin. Açıklamada <b>Ctrl+Enter</b> gönderir. ⎋ <b>Esc</b> açık pencereyi kapatır.</p>
     </div>
 
     <!-- Search / Filter / Sort -->
@@ -285,22 +284,37 @@
   </div>
 </div>
 
-<!-- Team modal (roller) -->
+<!-- Team modal (roller + yönetim) -->
 <div id="teamModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-  <div class="bg-white w-full max-w-2xl rounded-2xl p-5 shadow-xl">
+  <div class="bg-white w-full max-w-3xl rounded-2xl p-5 shadow-xl">
     <div class="flex items-center justify-between mb-4">
       <h3 class="font-bold text-lg">👥 Ekip & Roller</h3>
       <button id="closeTeam" class="text-gray-500 hover:text-gray-700">Kapat</button>
     </div>
 
+    <!-- Rol Yönetimi (sadece owner/manager düzenler) -->
+    <details class="soft-card rounded-xl p-3 mb-4" id="roleBox">
+      <summary class="cursor-pointer font-semibold">🔐 Rol Yönetimi</summary>
+      <div class="mt-3 grid md:grid-cols-3 gap-3 text-sm">
+        <input id="roleName" class="h-11 px-3 rounded-xl border" placeholder="Yeni rol adı (örn. misafir)"/>
+        <label class="flex items-center gap-2 h-11 px-3 rounded-xl border">
+          <input type="checkbox" id="roleViewAll"/><span>Tüm görevleri görsün</span>
+        </label>
+        <label class="flex items-center gap-2 h-11 px-3 rounded-xl border">
+          <input type="checkbox" id="roleAssignAll"/><span>Herkese atayabilsin</span>
+        </label>
+      </div>
+      <div class="mt-2 flex justify-end">
+        <button id="addRole" class="btn h-10 px-4 rounded-xl border bg-gray-50 hover:bg-gray-100">Rol Ekle</button>
+      </div>
+      <div id="roleList" class="mt-3 text-sm"></div>
+      <p class="text-xs text-gray-500 mt-2">Not: Kurucu/Yönetici tüm izinlere sahiptir ve kaldırılamaz.</p>
+    </details>
+
     <div class="soft-card rounded-xl p-3 mb-3">
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <input id="memberName" class="h-11 px-3 rounded-xl border" placeholder="Üye adı"/>
-        <select id="memberRole" class="h-11 px-3 rounded-xl border">
-          <option value="owner">Kurucu</option>
-          <option value="manager" selected>Yönetici</option>
-          <option value="member">Üye</option>
-        </select>
+        <select id="memberRole" class="h-11 px-3 rounded-xl border"></select>
         <button id="addMember" class="btn h-11 rounded-xl border bg-gray-50 hover:bg-gray-100">Ekle</button>
       </div>
     </div>
@@ -326,7 +340,7 @@
 <script>
 /* ---------- Utils & Storage ---------- */
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
-const KEY='nextotask_tasks_v10', KEY_USERS='nextotask_users_v2';
+const KEY='nextotask_tasks_v11', KEY_USERS='nextotask_users_v3', KEY_ROLES='nextotask_roles_v1';
 const todayISO=()=>new Date().toISOString().slice(0,10);
 const fmtDate=d=>d?new Date(d).toLocaleDateString('tr-TR'):'—';
 const randColor=()=>['#6366F1','#10B981','#F59E0B','#EF4444','#3B82F6','#8B5CF6','#14B8A6'][Math.floor(Math.random()*7)];
@@ -334,19 +348,37 @@ function load(k,f){ try{ return JSON.parse(localStorage.getItem(k)||JSON.stringi
 function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
 function addActivity(t, text){ t.activity=t.activity||[]; t.activity.push({ at:new Date().toISOString(), by:currentUserId, text }); }
 
-let tasks=load(KEY,[]), users=load(KEY_USERS,[]);
+/* ---------- Data ---------- */
+let tasks=load(KEY,[]), users=load(KEY_USERS,[]), customRoles=load(KEY_ROLES,[]);
 if(users.length===0){ users=[{id:'u_me', name:'Ben', color:randColor(), role:'owner'}]; save(KEY_USERS,users); }
+
 tasks.forEach(t=>{ if(!t.assigneeIds){ t.assigneeIds=t.assigneeId?[t.assigneeId]:[users[0].id]; delete t.assigneeId; } });
 
 let currentUserId=users[0].id;
 let currentFilter='all', selectedDate=todayISO(), currentView='list', searchTerm='', sortMode='created_desc', assigneeFilter='all';
 let selectedIds=new Set(), editingId=null;
 
+/* ---------- Roles ---------- */
+const BASE_ROLES=['owner','manager','member'];
+function getRoleConfig(role){
+  if(role==='owner'||role==='manager') return {viewAll:true, assignAll:true};
+  if(role==='member') return {viewAll:false, assignAll:false};
+  const r=customRoles.find(x=>x.name===role); 
+  return r ? {viewAll:!!r.viewAll, assignAll:!!r.assignAll} : {viewAll:false, assignAll:false};
+}
+function isAdmin(){ const r=userById(currentUserId)?.role||'member'; return r==='owner'||r==='manager'; }
+
 /* ---------- UI Helpers ---------- */
 const userById=id=>users.find(u=>u.id===id)||null;
 function avatarEl(u,size=22){ const el=document.createElement('span'); el.className='avatar'; el.style.width=el.style.height=size+'px'; el.style.background=u.color||'#999'; el.textContent=(u.name||'?').slice(0,1).toUpperCase(); return el; }
 
-/* ---------- Assignee chip select ---------- */
+/* ---------- Assignee permissions ---------- */
+function getAssignableUsers(){
+  const cfg=getRoleConfig(userById(currentUserId)?.role||'member');
+  return cfg.assignAll ? users : users.filter(u=>u.id===currentUserId);
+}
+
+/* ---------- Chip select (assignees) ---------- */
 function getSelectedAssignees(sel){
   const ds = (sel.dataset.order||'').split(',').filter(Boolean);
   const picked = new Set([...sel.selectedOptions].map(o=>o.value));
@@ -359,9 +391,10 @@ function paintChipSelect(chipsSel, menuSel, searchSel, listSel, hiddenSel){
   function close(){ menu.classList.add('hidden'); }
   function open(){ buildList(); menu.classList.remove('hidden'); search.value=''; search.focus(); }
   function buildList(){
+    const src=getAssignableUsers();
     const q=(search.value||'').toLowerCase();
     list.innerHTML='';
-    users.filter(u=>u.name.toLowerCase().includes(q)).forEach(u=>{
+    src.filter(u=>u.name.toLowerCase().includes(q)).forEach(u=>{
       const row=document.createElement('label'); row.className='flex items-center justify-between px-2 py-1 rounded hover:bg-gray-50 cursor-pointer';
       const left=document.createElement('div'); left.className='flex items-center gap-2';
       left.appendChild(avatarEl(u,18)); const nm=document.createElement('span'); nm.textContent=u.name; left.appendChild(nm);
@@ -371,7 +404,15 @@ function paintChipSelect(chipsSel, menuSel, searchSel, listSel, hiddenSel){
     });
   }
   function setSelected(id, yes){
+    // izin yoksa kendinden başkasını seçtirmeyelim
+    const allowed=getAssignableUsers().map(u=>u.id);
+    if(yes && !allowed.includes(id)) return;
     [...hidden.options].forEach(o=>{ if(o.value===id) o.selected=!!yes; });
+    // eğer assignAll değilse tek seçenek: current user
+    const cfg=getRoleConfig(userById(currentUserId)?.role||'member');
+    if(!cfg.assignAll){
+      [...hidden.options].forEach(o=>{ o.selected = (o.value===currentUserId); });
+    }
     drawChips();
   }
   function drawChips(){
@@ -407,12 +448,15 @@ function paintChipSelect(chipsSel, menuSel, searchSel, listSel, hiddenSel){
   search.addEventListener('input', buildList);
   drawChips(); // initial
 }
+
+/* ---------- Fill selects (assignee filter + forms) ---------- */
 function fillAssigneeSelects(){
   const f=$('#assigneeFilter'); f.innerHTML='<option value="all">Atanan: Tümü</option>';
   users.forEach(u=>{ const o=document.createElement('option'); o.value=u.id; o.textContent=u.name; f.appendChild(o); });
   const q=$('#assignees'), e=$('#e_assignees'); q.innerHTML=''; e.innerHTML='';
-  users.forEach(u=>{ const o1=document.createElement('option'); o1.value=u.id; o1.textContent=u.name; q.appendChild(o1);
-                     const o2=document.createElement('option'); o2.value=u.id; o2.textContent=u.name; e.appendChild(o2); });
+  // gizli selectlere sadece atanabilir kişileri koy
+  getAssignableUsers().forEach(u=>{ const o1=document.createElement('option'); o1.value=u.id; o1.textContent=u.name; q.appendChild(o1); });
+  getAssignableUsers().forEach(u=>{ const o2=document.createElement('option'); o2.value=u.id; o2.textContent=u.name; e.appendChild(o2); });
   paintChipSelect('#chipsAssignees','#assigneeMenu','#assigneeSearch','#assigneeList','#assignees');
   paintChipSelect('#e_chips','#e_menu','#e_search','#e_list','#e_assignees');
 }
@@ -442,7 +486,12 @@ function buildWeek(centerISO=todayISO()){
   }
 }
 
-/* ---------- Quick Add ---------- */
+/* ---------- Enter=submit & ESC=close (global) ---------- */
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='Escape'){
+    ['editModal','teamModal','planModal','focusOverlay'].forEach(id=> $('#'+id).classList.add('hidden'));
+  }
+});
 document.querySelectorAll('form[data-enter-submit]').forEach(form=>{
   form.addEventListener('keydown',(e)=>{
     const isTextArea = e.target.tagName==='TEXTAREA';
@@ -451,12 +500,16 @@ document.querySelectorAll('form[data-enter-submit]').forEach(form=>{
     }
   });
 });
+
+/* ---------- Quick Add ---------- */
 $('#taskForm').addEventListener('submit', e=>{
   e.preventDefault();
   const typedDue=$('#due').value || null;
   const autoDue = typedDue || (currentFilter==='date' ? selectedDate : todayISO());
 
   const assignees = getSelectedAssignees($('#assignees'));
+  const finalAssignees = assignees.length? assignees : [currentUserId];
+
   const t={
     id:'t_'+Date.now().toString(36),
     title:$('#title').value.trim(),
@@ -466,7 +519,7 @@ $('#taskForm').addEventListener('submit', e=>{
     dueDate:autoDue,
     estimate:parseInt($('#estimate').value||'0',10)||0,
     repeat:$('#repeat').value||'none',
-    assigneeIds:assignees.length? assignees : [users[0].id],
+    assigneeIds:finalAssignees,
     status:'TODO', subtasks:[], comments:[], activity:[], createdAt:new Date().toISOString()
   };
   if(!t.title) return;
@@ -493,7 +546,7 @@ $('#toggleView').addEventListener('click', ()=>{ currentView=currentView==='list
 /* ---------- Daily plan ---------- */
 $('#dailyPlanBtn').addEventListener('click', ()=>{
   const start=9*60; let cur=start; const today=todayISO();
-  const pool=tasks.filter(t=>(t.status!=='DONE')&&(!t.dueDate||t.dueDate<=today))
+  const pool=visibilityFilter(tasks).filter(t=>(t.status!=='DONE')&&(!t.dueDate||t.dueDate<=today))
     .sort((a,b)=>{ const p={HIGH:2,NORMAL:1,LOW:0}; const da=a.dueDate?Date.parse(a.dueDate):0, db=b.dueDate?Date.parse(b.dueDate):0; if(da!==db) return da-db; return p[b.priority]-p[a.priority]; });
   const plan=[];
   for(const t of pool){
@@ -507,9 +560,15 @@ $('#dailyPlanBtn').addEventListener('click', ()=>{
 $('#closePlan').addEventListener('click', ()=> $('#planModal').classList.add('hidden'));
 function mins(m){ const h=Math.floor(m/60).toString().padStart(2,'0'), mm=(m%60).toString().padStart(2,'0'); return `${h}:${mm}` }
 
-/* ---------- Filter helpers ---------- */
+/* ---------- Visibility + Filter ---------- */
+function visibilityFilter(arr){
+  const me=userById(currentUserId)||{role:'member'};
+  const cfg=getRoleConfig(me.role);
+  if(cfg.viewAll) return arr;
+  return arr.filter(t=> (t.assigneeIds||[]).includes(currentUserId));
+}
 function applyFilter(arr){
-  let out=arr.filter(t=>{
+  let out=visibilityFilter(arr).filter(t=>{
     const hay=(t.title+' '+t.description+' '+(t.labels||[]).join(' ')).toLowerCase();
     return hay.includes(searchTerm);
   });
@@ -537,13 +596,14 @@ function applyFilterAndSort(arr){
 function render(){
   buildWeek(selectedDate);
 
-  const od=tasks.filter(t=>t.status!=='DONE' && t.dueDate && t.dueDate<todayISO()).length;
+  const od=visibilityFilter(tasks).filter(t=>t.status!=='DONE' && t.dueDate && t.dueDate<todayISO()).length;
   $('#alertBar').classList.toggle('hidden', od===0);
   if(od>0) $('#alertText').textContent=`Geciken ${od} görevin var. Filtre: Geciken ile bakabilirsin.`;
 
-  const total=tasks.length, done=tasks.filter(t=>t.status==='DONE').length;
-  const estPending=tasks.filter(t=>t.status!=='DONE').reduce((s,t)=>s+(t.estimate||0),0);
-  const estDone=tasks.filter(t=>t.status==='DONE').reduce((s,t)=>s+(t.estimate||0),0);
+  const visible=visibilityFilter(tasks);
+  const total=visible.length, done=visible.filter(t=>t.status==='DONE').length;
+  const estPending=visible.filter(t=>t.status!=='DONE').reduce((s,t)=>s+(t.estimate||0),0);
+  const estDone=visible.filter(t=>t.status==='DONE').reduce((s,t)=>s+(t.estimate||0),0);
   $('#stats').textContent=`Toplam: ${total} • Bekleyen: ${total-done} • Tamamlanan: ${done} • Tahmin Bekleyen: ${estPending} dk • Tam: ${estDone} dk`;
   $('#viewName').textContent=currentView==='list'?'Liste':'Kanban';
 
@@ -634,7 +694,7 @@ function renderKanban(){
       const t={ id:'t_'+Date.now().toString(36),
         title, description:'', labels:[], priority:'NORMAL',
         dueDate:(currentFilter==='date'? selectedDate : todayISO()), estimate:0, repeat:'none',
-        assigneeIds:[users[0].id], status:st, subtasks:[], comments:[], activity:[], createdAt:new Date().toISOString()
+        assigneeIds:[currentUserId], status:st, subtasks:[], comments:[], activity:[], createdAt:new Date().toISOString()
       };
       addActivity(t,'oluşturuldu'); tasks.push(t); save(KEY,tasks); render();
     };
@@ -685,7 +745,10 @@ function openEdit(t){
   editingId=t.id;
   $('#e_title').value=t.title; $('#e_desc').value=t.description||''; $('#e_labels').value=(t.labels||[]).join(', ');
   $('#e_priority').value=t.priority; $('#e_due').value=t.dueDate||''; $('#e_est').value=t.estimate||0; $('#e_repeat').value=t.repeat||'none';
-  const sel=$('#e_assignees'); [...sel.options].forEach(o=> o.selected=(t.assigneeIds||[]).includes(o.value));
+  // atanabilir kişiler
+  const sel=$('#e_assignees'); const allowed=getAssignableUsers().map(u=>u.id);
+  [...sel.options].forEach(o=>{ o.selected=(t.assigneeIds||[]).includes(o.value) && allowed.includes(o.value); });
+  // eğer kullanıcı atanamaz kişileri görmüyorsa mevcudu koruyalım (kaydetmediği sürece)
   paintChipSelect('#e_chips','#e_menu','#e_search','#e_list','#e_assignees');
   paintComments(t); paintActivity(t);
   $('#editModal').classList.remove('hidden');
@@ -704,10 +767,10 @@ $('#editForm').addEventListener('submit', e=>{
   t.dueDate=$('#e_due').value||null;
   t.estimate=parseInt($('#e_est').value||'0',10)||0;
   t.repeat=$('#e_repeat').value||'none';
-  t.assigneeIds=getSelectedAssignees($('#e_assignees'));
-  if(t.assigneeIds.length===0) t.assigneeIds=[users[0].id];
+  const allowedIds=getAssignableUsers().map(u=>u.id);
+  const picked=getSelectedAssignees($('#e_assignees')).filter(id=>allowedIds.includes(id));
+  t.assigneeIds=picked.length? picked : t.assigneeIds; // izin yoksa eskisini koru
 
-  // activity diffs
   if(prevTitle!==t.title) addActivity(t,'başlık güncellendi');
   if(prevDesc!==t.description) addActivity(t,'açıklama güncellendi');
   if(prevEst!==t.estimate) addActivity(t,`tahmin ${prevEst||0}→${t.estimate} dk`);
@@ -737,8 +800,7 @@ function paintComments(t){
   });
 }
 function renderMentions(text){
-  // workspace kullanıcı isimleri ile eşleşeni vurgula
-  const names=users.map(u=>u.name).sort((a,b)=>b.length-a.length); // uzun isimler önce
+  const names=users.map(u=>u.name).sort((a,b)=>b.length-a.length);
   let out=text;
   names.forEach(n=>{
     const rx=new RegExp('(^|\\s)@'+escapeReg(n)+'(\\b)','g');
@@ -822,8 +884,8 @@ function nextDate(d,type){ const base=new Date(d||todayISO()); const n=new Date(
 let focusTaskId=null, timerSec=25*60, timerInt=null, onBreak=false;
 function updateTimerLabel(){ const m=Math.floor(timerSec/60).toString().padStart(2,'0'); const s=(timerSec%60).toString().padStart(2,'0'); $('#timer').textContent=`${m}:${s}${onBreak?' • mola':''}`; $('#foTimer').textContent=`${m}:${s}`; }
 function setFocusDurationFromTask(t){
-  const base = t.estimate && t.estimate>0 ? t.estimate : 25; // dk
-  const minutes = Math.max(5, base - 5); // tahmin - 5
+  const base = t.estimate && t.estimate>0 ? t.estimate : 25;
+  const minutes = Math.max(5, base - 5); // tahmin - 5 dk
   timerSec = minutes * 60; onBreak=false; updateTimerLabel();
 }
 function openFocus(t){ focusTaskId=t.id; $('#focusTask').textContent='Odak: '+t.title; setFocusDurationFromTask(t); $('#foTitle').textContent=t.title; $('#foDesc').textContent=t.description||''; $('#focusOverlay').classList.remove('hidden'); }
@@ -838,37 +900,72 @@ $('#resetTimer').addEventListener('click', ()=>{ const t=tasks.find(x=>x.id===fo
 updateTimerLabel();
 
 /* ---------- Team modal ---------- */
-$('#teamBtn').addEventListener('click', ()=>{ $('#teamModal').classList.remove('hidden'); paintTeam(); });
+$('#teamBtn').addEventListener('click', ()=>{ $('#teamModal').classList.remove('hidden'); paintTeam(); paintRolesUI(); });
 $('#closeTeam').addEventListener('click', ()=> $('#teamModal').classList.add('hidden'));
 $('#addMember').addEventListener('click', ()=>{
   const name=$('#memberName').value.trim(); if(!name) return;
   const role=$('#memberRole').value;
   users.push({id:'u_'+Date.now().toString(36), name, role, color:randColor()});
-  save(KEY_USERS,users); $('#memberName').value=''; paintTeam(); fillAssigneeSelects();
+  save(KEY_USERS,users); $('#memberName').value=''; paintTeam(); fillAssigneeSelects(); render();
 });
+function roleText(r){ return r==='owner'?'Kurucu':(r==='manager'?'Yönetici':(r==='member'?'Üye':r)); }
+function countOwners(){ return users.filter(u=>u.role==='owner').length; }
 function paintTeam(){
+  // rol seçenekleri
+  const roleSel=$('#memberRole'); roleSel.innerHTML='';
+  [...BASE_ROLES, ...customRoles.map(r=>r.name)].forEach(r=>{ const o=document.createElement('option'); o.value=r; o.textContent=roleText(r); if(r==='manager') o.selected=true; roleSel.appendChild(o); });
+
   const mgr=$('#mgrList'), mem=$('#memList'); mgr.innerHTML=''; mem.innerHTML='';
-  const mg=users.filter(u=>u.role==='owner'||u.role==='manager'), me=users.filter(u=>u.role==='member');
+  const mg=users.filter(u=>u.role==='owner'||u.role==='manager'), me=users.filter(u=>u.role!=='owner'&&u.role!=='manager');
   function row(u){
     const wrap=document.createElement('div'); wrap.className='flex items-center justify-between border rounded-xl px-3 py-2';
     const left=document.createElement('div'); left.className='flex items-center gap-2'; left.appendChild(avatarEl(u,22)); const nm=document.createElement('div'); nm.innerHTML=`<div class="font-medium">${u.name}</div><div class="text-xs text-gray-400">${roleText(u.role)}</div>`; left.appendChild(nm);
     const right=document.createElement('div'); right.className='flex items-center gap-2';
     const roleSel=document.createElement('select'); roleSel.className='border rounded-lg px-2 py-1 text-xs';
-    ['owner','manager','member'].forEach(r=>{ const o=document.createElement('option'); o.value=r; o.textContent=roleText(r); if(u.role===r) o.selected=true; roleSel.appendChild(o); });
-    roleSel.onchange=()=>{ if(u.role==='owner' && countOwners()<=1 && roleSel.value!=='owner'){ alert('En az bir kurucu gerekir.'); roleSel.value='owner'; return; } u.role=roleSel.value; save(KEY_USERS,users); paintTeam(); fillAssigneeSelects(); };
-    const setBtn=document.createElement('button'); setBtn.className='px-2 py-1 rounded border text-xs'; setBtn.textContent='Ben yap'; setBtn.onclick=()=>{ currentUserId=u.id; alert('Aktif kullanıcı: '+u.name); };
+    [...BASE_ROLES, ...customRoles.map(r=>r.name)].forEach(r=>{ const o=document.createElement('option'); o.value=r; o.textContent=roleText(r); if(u.role===r) o.selected=true; roleSel.appendChild(o); });
+    roleSel.onchange=()=>{ 
+      if(u.role==='owner' && countOwners()<=1 && roleSel.value!=='owner'){ alert('En az bir kurucu gerekir.'); roleSel.value='owner'; return; }
+      u.role=roleSel.value; save(KEY_USERS,users); paintTeam(); fillAssigneeSelects(); render();
+    };
+    const setBtn=document.createElement('button'); setBtn.className='px-2 py-1 rounded border text-xs'; setBtn.textContent='Ben yap'; setBtn.onclick=()=>{ currentUserId=u.id; alert('Aktif kullanıcı: '+u.name); render(); };
     const del=document.createElement('button'); del.className='px-2 py-1 rounded border border-red-200 text-red-600 text-xs'; del.textContent='Sil';
-    del.onclick=()=>{ if(u.role==='owner' && countOwners()<=1){ alert('Son kurucuyu silemezsiniz.'); return; } users=users.filter(x=>x.id!==u.id); tasks.forEach(t=>{ t.assigneeIds=t.assigneeIds.filter(id=>id!==u.id); if(t.assigneeIds.length===0) t.assigneeIds=[users[0].id]; }); save(KEY_USERS,users); save(KEY,tasks); paintTeam(); fillAssigneeSelects(); };
+    del.onclick=()=>{ if(u.role==='owner' && countOwners()<=1){ alert('Son kurucuyu silemezsiniz.'); return; } users=users.filter(x=>x.id!==u.id); tasks.forEach(t=>{ t.assigneeIds=t.assigneeIds.filter(id=>id!==u.id); if(t.assigneeIds.length===0) t.assigneeIds=[currentUserId]; }); save(KEY_USERS,users); save(KEY,tasks); paintTeam(); fillAssigneeSelects(); render(); };
     right.appendChild(roleSel); right.appendChild(setBtn); right.appendChild(del);
     wrap.appendChild(left); wrap.appendChild(right); return wrap;
   }
   mg.forEach(u=> mgr.appendChild(row(u)));
   me.forEach(u=> mem.appendChild(row(u)));
 }
-function roleText(r){ return r==='owner'?'Kurucu':(r==='manager'?'Yönetici':'Üye'); }
-function countOwners(){ return users.filter(u=>u.role==='owner').length; }
+/* ---- Role UI ---- */
+function paintRolesUI(){
+  // owner/manager dışındakiler rol düzenleyemesin
+  $('#roleBox').open = false;
+  $('#roleBox').style.display = isAdmin()? 'block':'none';
+  if(!isAdmin()) return;
+  const list=$('#roleList'); list.innerHTML='';
+  if(customRoles.length===0){ list.innerHTML='<div class="text-gray-500 text-sm">Özel rol yok.</div>'; }
+  customRoles.forEach((r,i)=>{
+    const row=document.createElement('div'); row.className='flex items-center justify-between border rounded-xl px-3 py-2 mt-2';
+    row.innerHTML=`<div class="font-medium">${r.name}</div>`;
+    const right=document.createElement('div'); right.className='flex items-center gap-3 text-sm';
+    const v=document.createElement('label'); v.className='flex items-center gap-1'; v.innerHTML=`<input type="checkbox" ${r.viewAll?'checked':''}/> Tümünü gör`;
+    const a=document.createElement('label'); a.className='flex items-center gap-1'; a.innerHTML=`<input type="checkbox" ${r.assignAll?'checked':''}/> Herkese ata`;
+    v.querySelector('input').onchange=(e)=>{ r.viewAll=e.target.checked; save(KEY_ROLES,customRoles); render(); };
+    a.querySelector('input').onchange=(e)=>{ r.assignAll=e.target.checked; save(KEY_ROLES,customRoles); fillAssigneeSelects(); };
+    const del=document.createElement('button'); del.className='px-2 py-1 rounded border border-red-200 text-red-600 text-xs'; del.textContent='Sil';
+    del.onclick=()=>{ if(users.some(u=>u.role===r.name)){ alert('Bu rol kullanıcılarca kullanılıyor. Önce kullanıcıları başka role taşıyın.'); return; } customRoles.splice(i,1); save(KEY_ROLES,customRoles); paintRolesUI(); paintTeam(); fillAssigneeSelects(); };
+    right.appendChild(v); right.appendChild(a); right.appendChild(del); row.appendChild(right); list.appendChild(row);
+  });
+}
+$('#addRole').addEventListener('click', ()=>{
+  const name=$('#roleName').value.trim(); if(!name) return;
+  if(BASE_ROLES.includes(name)||customRoles.some(r=>r.name===name)){ alert('Bu rol adı zaten var.'); return; }
+  const r={name, viewAll:$('#roleViewAll').checked, assignAll:$('#roleAssignAll').checked};
+  customRoles.push(r); save(KEY_ROLES,customRoles); $('#roleName').value=''; $('#roleViewAll').checked=false; $('#roleAssignAll').checked=false;
+  paintRolesUI(); paintTeam(); fillAssigneeSelects(); render();
+});
 
-/* ---------- Templates inject ---------- */
+/* ---------- Templates ---------- */
 document.querySelector('#taskTpl').innerHTML=`
   <div class="task soft-card rounded-2xl p-4 flex flex-col gap-3 fade-up border" draggable="true">
     <div class="flex items-start justify-between gap-4">
@@ -931,6 +1028,7 @@ document.querySelector('#kanbanCardTpl').innerHTML=`
 
 /* ---------- Init ---------- */
 buildWeek(selectedDate);
+fillAssigneeSelects();
 render();
 </script>
 </body>
