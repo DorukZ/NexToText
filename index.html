@@ -1,279 +1,362 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" class="">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>NexToTask – Local Dashboard</title>
-<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-<style>
-  :root { --brand:#10b981; --brand-200:#a7f3d0; --brand-300:#6ee7b7; --brand-400:#34d399; --brand-600:#059669; }
-  html,body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial }
-  @keyframes fadeUp { from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:translateY(0)} }
-  .fade-up{ animation: fadeUp .35s ease-out both }
-  .soft-card{ background:#fff; border:1px solid rgba(0,0,0,.06); box-shadow:0 10px 30px rgba(2,6,23,.04) }
-  .btn{ transition:transform .08s ease } .btn:active{ transform:translateY(1px) }
-  .drag-over{ outline:2px dashed var(--brand-400); outline-offset:6px }
-  .kcard{ transition: transform .15s ease, box-shadow .15s ease, border-color .15s }
-  .kcard:hover{ transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.06) }
-  .selected{ box-shadow:0 0 0 2px var(--brand-400) inset!important; border-color:var(--brand-400) }
-  .sticky-head{ position:sticky; top:0; z-index:1; background:#fff }
-  .dropzone{ min-height:380px; padding-bottom:16px }
-  .avatar{ width:22px; height:22px; border-radius:9999px; display:inline-grid; place-items:center; font-size:11px; color:#fff }
-  /* Chip multi-select */
-  .chip{ display:inline-flex; align-items:center; gap:6px; background:#F0FDF4; color:#065F46; border:1px solid #DCFCE7; border-radius:9999px; padding:4px 10px; font-size:12px }
-  .chip .x{ cursor:pointer; opacity:.7 } .chip .x:hover{ opacity:1 }
-  .chip[draggable="true"]{ user-select:none }
-  .menu{ position:absolute; inset:auto auto auto 0; z-index:30; background:#fff; border:1px solid rgba(0,0,0,.08); box-shadow:0 14px 35px rgba(0,0,0,.08); border-radius:12px; padding:8px; width:260px; max-height:240px; overflow:auto }
-  .mention{ color:#065F46; font-weight:600 }
-  #focusOverlay{ backdrop-filter:blur(2px) }
-</style>
-</head>
-<body class="bg-gradient-to-b from-green-50 to-gray-50 text-gray-800">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NexToTask – Uygulama</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --brand:#10b981; --brand-300:#6ee7b7; --brand-500:#10b981; --brand-600:#059669;
+      --bg:#f6f7fb; --card:#ffffff; --text:#0f172a; --muted:#64748b; --border:rgba(0,0,0,.08);
+      --badge:#eef2f7; --danger:#ef4444; --danger-50:#fef2f2; --shadow:0 10px 30px rgba(2,6,23,.05);
+    }
+    .dark:root{
+      --bg:#0a0a0a; --card:#111111; --text:#e6e6e6; --muted:#a3a3a3; --border:rgba(255,255,255,.12);
+      --badge:#1e1e1e; --danger:#f87171; --danger-50:#2b1d1d; --shadow:0 18px 40px rgba(0,0,0,.55);
+    }
+    html,body{ font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial; background:var(--bg); color:var(--text) }
 
-<header class="w-full bg-white/90 backdrop-blur shadow-sm sticky top-0 z-40">
-  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <span class="text-xl font-extrabold text-green-600">NexToTask</span>
-      <span class="hidden sm:inline text-sm text-gray-400">Local • Backend yok</span>
+    /* header */
+    header.header{ position:sticky; top:0; z-index:40; background:var(--card); transition:box-shadow .18s ease; border-bottom:1px solid var(--border) }
+    header.header.scrolled{ box-shadow:0 8px 24px rgba(0,0,0,.06) }
+
+    /* sidebar (YouTube stili) */
+    .sidebar{
+      position:fixed; inset:0 auto 0 0; width:260px; background:var(--card);
+      border-right:1px solid var(--border); transform:translateX(-270px);
+      transition:transform .22s cubic-bezier(.2,.8,.2,1); z-index:45;
+    }
+    .sidebar.open{ transform:translateX(0) }
+    .sidebar .item{ display:flex; align-items:center; gap:.7rem; padding:.65rem .9rem; border-radius:.75rem; }
+    .sidebar .item.active{ background:rgba(16,185,129,.10); border:1px solid rgba(16,185,129,.25) }
+    .sidebar .item:hover{ background:rgba(16,185,129,.06) }
+
+    /* floating toggles */
+    .floating-tab{
+      position:fixed; right:8px; top:50%; transform:translateY(-50%); writing-mode:vertical-rl; text-orientation:mixed;
+      background:var(--card); border:1px solid var(--border); border-radius:12px; padding:.55rem .35rem; box-shadow:var(--shadow); z-index:30;
+    }
+
+    /* cards */
+    .soft-card{ background:var(--card); border:1px solid var(--border); box-shadow:var(--shadow); }
+
+    /* modal */
+    .modal{ position:fixed; inset:0; z-index:60; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.36); backdrop-filter:blur(2px) }
+    .modal.open{ display:flex }
+    .modal-card{ transform:translateY(12px) scale(.98); opacity:0; transition:.18s ease; background:var(--card); color:var(--text) }
+    .modal.open .modal-card{ transform:none; opacity:1 }
+    .modal-card{ max-height:90vh; overflow:auto }
+
+    /* calendar grid (ay görünümü) */
+    .cal-grid{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:.55rem }
+    .cal-cell{ border:1px solid var(--border); border-radius:12px; padding:.55rem; background:var(--card); min-height:74px; display:flex; flex-direction:column; gap:.3rem }
+    .cal-cell.sel{ box-shadow:0 0 0 2px var(--brand-300) inset }
+    .cal-cell.today{ outline:2px solid var(--brand-500); outline-offset:-2px }
+    .cal-day{ font-weight:700; font-size:.9rem }
+    .badge{ background:var(--badge); color:var(--muted); border-radius:999px; font-size:.70rem; padding:.15rem .45rem; width:max-content }
+
+    /* kanban */
+    .dropzone{ min-height:420px }
+    .dropzone.drag-over{ outline:2px dashed var(--brand-500); outline-offset:6px }
+
+    /* chips + assignee dropdown */
+    .chip{ display:inline-flex; align-items:center; gap:6px; background:#F0FDF4; color:#065F46; border:1px solid #DCFCE7; border-radius:9999px; padding:4px 10px; font-size:12px }
+    .dark .chip{ background:#082f23; color:#a7f3d0; border-color:#064e3b }
+    .assignee-menu{ position:absolute; z-index:70; width:260px; max-height:280px; overflow:auto; background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:.4rem }
+
+    /* week/day calendar (takvim menüsü) */
+    .week-grid{ display:grid; grid-template-columns:60px repeat(7,1fr); }
+    .hour-row{ display:grid; grid-template-columns:60px repeat(7,1fr); }
+    .hour-cell{ border-top:1px solid var(--border); height:44px; position:relative; }
+    .hour-label{ font-size:.70rem; color:var(--muted); padding-right:.25rem; text-align:right; transform:translateY(-50%); position:relative; top:22px }
+    .event{ position:absolute; left:6px; right:6px; border-radius:8px; padding:.25rem .4rem; background:rgba(16,185,129,.15); border:1px solid rgba(16,185,129,.35); font-size:.75rem; cursor:move; }
+    .resize-handle{ position:absolute; left:0; right:0; height:6px; cursor:ns-resize; }
+    .resize-top{ top:-3px } .resize-bottom{ bottom:-3px }
+
+    /* misc */
+    .btn{ transition:transform .08s ease } .btn:active{ transform:translateY(1px) }
+    body.no-scroll{ overflow:hidden }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR (YouTube stili, NTT ile aç/kapa) -->
+<aside id="sidebar" class="sidebar">
+  <div class="px-4 py-3 flex items-center gap-3 border-b" style="border-color:var(--border)">
+    <button id="closeSidebar" class="px-2 py-1 rounded-lg border" title="Kapat">✕</button>
+    <div class="font-extrabold text-green-600 text-lg">NexToTask</div>
+  </div>
+  <nav class="p-3 space-y-1 text-sm">
+    <button data-route="home" class="item active"><span>🏠</span> <span>Genel</span></button>
+    <button data-route="tasks" class="item"><span>🗂️</span> <span>Görevler</span></button>
+    <button data-route="calendar" class="item"><span>📅</span> <span>Takvim</span></button>
+    <button data-route="daily" class="item"><span>🗓️</span> <span>Günlük Plan</span></button>
+    <button data-route="team" class="item"><span>👥</span> <span>Ekip</span></button>
+    <button data-route="reports" class="item"><span>📈</span> <span>Raporlar</span></button>
+    <button data-route="templates" class="item"><span>📦</span> <span>Şablonlar</span></button>
+    <button data-route="settings" class="item"><span>⚙️</span> <span>Ayarlar</span></button>
+  </nav>
+  <div class="absolute left-0 right-0 bottom-0 p-3">
+    <button id="darkToggle" class="w-full px-3 py-2 rounded-xl border">🌙 Karanlık Mod</button>
+  </div>
+</aside>
+
+<!-- HEADER -->
+<header id="hdr" class="header">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+    <!-- NTT (sidebar toggle) -->
+    <button id="brandBtn" class="px-2.5 py-1.5 rounded-lg border font-bold text-green-600">NTT</button>
+    <div class="text-xl font-extrabold">NexToTask</div>
+
+    <div class="ml-auto flex items-center gap-2">
+      <button id="newTaskBtn" class="btn px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700">Yeni Görev +</button>
     </div>
-    <nav class="hidden sm:flex gap-2 text-sm">
-      <button id="toggleView" class="btn px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50">Kanban Görünüm</button>
-      <button id="dailyPlanBtn" class="btn px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50">Günlük Plan Öner</button>
-      <button id="teamBtn" class="btn px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50">Ekip</button>
-    </nav>
   </div>
 </header>
 
-<div id="alertBar" class="hidden bg-yellow-50 border-b border-yellow-200 text-yellow-800 text-sm">
-  <div class="max-w-7xl mx-auto px-4 py-2 flex items-center gap-2">
-    <span>⚠️</span><span id="alertText"></span>
+<!-- Dikey Görünüm aç/kapa -->
+<button id="viewTab" class="floating-tab text-sm">Görünüm</button>
+
+<!-- GÖRÜNÜM SAĞ PANEL -->
+<aside id="viewSidebar" class="soft-card p-4 rounded-2xl" style="position:fixed; right:16px; top:86px; width:320px; max-height:calc(100vh - 110px); overflow:auto; transform:translateX(360px); transition:.2s; z-index:35;">
+  <div class="font-bold mb-1">🔎 Görünüm</div>
+  <input id="search" placeholder="Ara (başlık/etiket/açıklama)" class="w-full h-11 px-3 rounded-xl border bg-transparent focus:ring-2 focus:ring-green-200"/>
+  <div class="grid grid-cols-2 gap-3 mt-3">
+    <select id="filter" class="h-11 px-3 rounded-xl border bg-transparent focus:ring-2 focus:ring-green-200">
+      <option value="pending">Bekleyen</option><option value="all">Tümü</option>
+      <option value="date">Seçili Gün</option><option value="today">Bugün</option>
+      <option value="upcoming">Yakında (7g)</option><option value="overdue">Geciken</option><option value="done">Tamamlanan</option>
+    </select>
+    <select id="sort" class="h-11 px-3 rounded-xl border bg-transparent focus:ring-2 focus:ring-green-200">
+      <option value="created_desc">Sırala: Yeni → Eski</option>
+      <option value="created_asc">Sırala: Eski → Yeni</option>
+      <option value="due_asc">Sırala: Tarih (Artan)</option>
+      <option value="due_desc">Sırala: Tarih (Azalan)</option>
+      <option value="priority_desc">Sırala: Öncelik (Yüksek)</option>
+    </select>
   </div>
-</div>
+  <select id="assigneeFilter" class="w-full h-11 px-3 rounded-xl border bg-transparent focus:ring-2 focus:ring-green-200 mt-3">
+    <option value="all">Atanan: Tümü</option>
+  </select>
+  <div class="flex flex-wrap gap-2 pt-3">
+    <button id="bulkDone" class="px-3 py-1.5 rounded-lg border hover:bg-gray-50">Seçiliyi Tamamla</button>
+    <button id="bulkUndo" class="px-3 py-1.5 rounded-lg border hover:bg-gray-50">Seçiliyi Beklemeye Al</button>
+    <button id="bulkDel"  class="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50">Seçiliyi Sil</button>
+  </div>
+</aside>
 
-<main class="max-w-7xl mx-auto px-4 py-6 md:py-10">
+<main id="main" class="max-w-7xl mx-auto px-4 py-6 md:py-10">
 
-  <!-- Mini Takvim -->
-  <section class="soft-card rounded-2xl p-4 md:p-6 mb-6 fade-up">
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="text-lg font-bold">📅 Haftalık Mini Takvim</h2>
-      <div class="text-xs text-gray-500">Kartı bir güne sürükleyerek tarih ata</div>
-    </div>
-    <div id="weekStrip" class="grid grid-cols-7 gap-2"></div>
-  </section>
-
-  <!-- Hızlı Ekle + Filtre -->
-  <section class="grid lg:grid-cols-3 gap-6 mb-6">
-    <!-- Quick Add -->
-    <div class="soft-card rounded-2xl p-4 md:p-6 lg:col-span-2 fade-up">
-      <h2 class="text-lg font-bold mb-3">🚀 Hızlı Görev Ekle</h2>
-
-      <form id="taskForm" data-enter-submit class="grid grid-cols-1 md:grid-cols-12 gap-3 text-sm">
-        <input id="title" required placeholder="Görev başlığı"
-          class="md:col-span-4 h-11 px-3 rounded-xl border border-gray-200 bg-white outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200 break-words"/>
-        <input id="labels" placeholder="Etiketler (virgülle)"
-          class="md:col-span-3 h-11 px-3 rounded-xl border border-gray-200 bg-white outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200"/>
-
-        <select id="priority"
-          class="md:col-span-2 h-11 px-3 rounded-xl border border-gray-200 bg-white outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200">
-          <option value="NORMAL">Öncelik: Normal</option>
-          <option value="HIGH">Öncelik: Yüksek</option>
-          <option value="LOW">Öncelik: Düşük</option>
-        </select>
-
-        <input id="due" type="date"
-          class="md:col-span-3 h-11 px-3 rounded-xl border border-gray-200 bg-white outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200"/>
-
-        <input id="estimate" type="number" min="0" placeholder="Tahmin (dk)"
-          class="md:col-span-2 h-11 px-3 rounded-xl border border-gray-200 bg-white outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200"/>
-
-        <select id="repeat"
-          class="md:col-span-2 h-11 px-3 rounded-xl border border-gray-200 bg-white outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200">
-          <option value="none">Tekrar yok</option>
-          <option value="daily">Günlük</option>
-          <option value="weekly">Haftalık</option>
-          <option value="monthly">Aylık</option>
-        </select>
-
-        <!-- Chip'li Çoklu Atama -->
-        <div class="md:col-span-12 relative">
-          <label class="block text-xs text-gray-500 mb-1">Atananlar</label>
-          <div id="chipsAssignees"
-               class="flex flex-wrap items-center gap-2 min-h-[44px] px-3 py-2 rounded-xl border border-gray-200 bg-white cursor-text"></div>
-          <div id="assigneeMenu" class="menu hidden mt-2">
-            <input id="assigneeSearch" class="w-full mb-2 px-2 py-1.5 border rounded-lg text-sm" placeholder="Ara…"/>
-            <div id="assigneeList" class="space-y-1"></div>
-          </div>
-          <select id="assignees" multiple class="hidden"></select>
-        </div>
-
-        <input id="desc" placeholder="Açıklama (opsiyonel)"
-          class="md:col-span-12 h-11 px-3 rounded-xl border border-gray-200 bg-white outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200"/>
-
-        <button class="btn bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-medium md:col-span-12">Ekle</button>
-      </form>
-
-      <p class="text-xs text-gray-400 mt-2">↩️ <b>Enter</b> ile ekleyin. Açıklamada <b>Ctrl+Enter</b> gönderir. ⎋ <b>Esc</b> açık pencereyi kapatır.</p>
-    </div>
-
-    <!-- Search / Filter / Sort -->
-    <div class="soft-card rounded-2xl p-4 md:p-6 fade-up">
-      <h2 class="text-lg font-bold mb-3">🔎 Görünüm</h2>
-      <div class="space-y-3 text-sm">
-        <input id="search" placeholder="Ara (başlık/etiket/açıklama)" class="w-full h-11 px-3 rounded-xl border border-gray-200 bg-white outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200"/>
-        <div class="grid grid-cols-2 gap-3">
-          <select id="filter" class="h-11 px-3 rounded-xl border border-gray-200 bg-white outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200">
-            <option value="all">Filtre: Tümü</option>
-            <option value="date">Seçili Gün</option>
-            <option value="today">Bugün</option>
-            <option value="upcoming">Yakında (7g)</option>
-            <option value="overdue">Geciken</option>
-            <option value="pending">Bekleyen</option>
-            <option value="done">Tamamlanan</option>
-          </select>
-          <select id="sort" class="h-11 px-3 rounded-xl border border-gray-200 bg-white outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200">
-            <option value="created_desc">Sırala: Yeni → Eski</option>
-            <option value="created_asc">Sırala: Eski → Yeni</option>
-            <option value="due_asc">Sırala: Tarih (Artan)</option>
-            <option value="due_desc">Sırala: Tarih (Azalan)</option>
-            <option value="priority_desc">Sırala: Öncelik (Yüksek)</option>
-          </select>
-        </div>
-        <select id="assigneeFilter" class="w-full h-11 px-3 rounded-xl border border-gray-200 bg-white outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200">
-          <option value="all">Atanan: Tümü</option>
-        </select>
-        <div class="flex flex-wrap gap-2 pt-1">
-          <button id="bulkDone" class="btn px-3 py-1.5 rounded-lg border hover:bg-gray-50 text-sm">Seçiliyi Tamamla</button>
-          <button id="bulkUndo" class="btn px-3 py-1.5 rounded-lg border hover:bg-gray-50 text-sm">Seçiliyi Beklemeye Al</button>
-          <button id="bulkDel" class="btn px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-sm">Seçiliyi Sil</button>
+  <!-- ROUTE: GENEL -->
+  <section id="route-home">
+    <div class="soft-card rounded-2xl p-4 md:p-6">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-bold">📅 Mini Takvim</h2>
+        <div class="flex items-center gap-2 text-sm">
+          <button id="mPrev" class="px-2 py-1 rounded-lg border">←</button>
+          <div id="mTitle" class="px-2 font-semibold"></div>
+          <button id="mNext" class="px-2 py-1 rounded-lg border">→</button>
         </div>
       </div>
+      <div class="grid grid-cols-7 gap-2 text-xs text-gray-500 mb-2">
+        <div>Pzt</div><div>Sal</div><div>Çar</div><div>Per</div><div>Cum</div><div>Cmt</div><div>Paz</div>
+      </div>
+      <div id="miniCal" class="cal-grid"></div>
+      <div class="text-xs text-gray-400 mt-2">İpucu: Kartı bir güne sürükleyerek tarih ata.</div>
+    </div>
+
+    <div class="soft-card rounded-2xl p-4 mt-4">
+      <h3 class="font-semibold mb-2">📌 Seçilen Gündeki Görevler</h3>
+      <div id="miniDayTasks" class="space-y-2 text-sm"></div>
     </div>
   </section>
 
-  <!-- Stats -->
-  <section class="flex flex-wrap items-center gap-2 mb-4">
+  <!-- ROUTE: GÖREVLER -->
+  <section id="route-tasks" class="hidden">
+    <div class="flex items-center justify-between mb-3">
+      <div class="text-xl font-bold">Görevler</div>
+      <div class="flex items-center gap-2">
+        <button id="switchList" class="px-3 py-1.5 rounded-lg border bg-green-50">Liste</button>
+        <button id="switchKanban" class="px-3 py-1.5 rounded-lg border">Kanban</button>
+      </div>
+    </div>
+
+    <section id="listView" class="space-y-3"></section>
+
+    <section id="kanbanView" class="hidden grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="col soft-card rounded-2xl p-3">
+        <div class="flex items-center justify-between pb-2">
+          <h3 class="font-semibold">📦 BACKLOG</h3><button class="btn text-sm px-2 py-1 rounded-lg border hover:bg-gray-50" data-add="BACKLOG">➕</button>
+        </div>
+        <div id="col-BACKLOG" class="dropzone space-y-3 p-1" data-status="BACKLOG"></div><div class="text-xs text-gray-400 text-center py-2" data-empty="BACKLOG" hidden>Boş — buraya bırak</div>
+      </div>
+      <div class="col soft-card rounded-2xl p-3">
+        <div class="flex items-center justify-between pb-2">
+          <h3 class="font-semibold">📝 TODO</h3><button class="btn text-sm px-2 py-1 rounded-lg border hover:bg-gray-50" data-add="TODO">➕</button>
+        </div>
+        <div id="col-TODO" class="dropzone space-y-3 p-1" data-status="TODO"></div><div class="text-xs text-gray-400 text-center py-2" data-empty="TODO" hidden>Boş — buraya bırak</div>
+      </div>
+      <div class="col soft-card rounded-2xl p-3">
+        <div class="flex items-center justify-between pb-2">
+          <h3 class="font-semibold">⚙️ DOING</h3><button class="btn text-sm px-2 py-1 rounded-lg border hover:bg-gray-50" data-add="DOING">➕</button>
+        </div>
+        <div id="col-DOING" class="dropzone space-y-3 p-1" data-status="DOING"></div><div class="text-xs text-gray-400 text-center py-2" data-empty="DOING" hidden>Boş — buraya bırak</div>
+      </div>
+      <div class="col soft-card rounded-2xl p-3">
+        <div class="flex items-center justify-between pb-2">
+          <h3 class="font-semibold">✅ DONE</h3><button class="btn text-sm px-2 py-1 rounded-lg border hover:bg-gray-50" data-add="DONE">➕</button>
+        </div>
+        <div id="col-DONE" class="dropzone space-y-3 p-1" data-status="DONE"></div><div class="text-xs text-gray-400 text-center py-2" data-empty="DONE" hidden>Boş — buraya bırak</div>
+      </div>
+    </section>
+  </section>
+
+  <!-- ROUTE: TAKVİM -->
+  <section id="route-calendar" class="hidden">
+    <div class="flex items-center justify-between mb-3">
+      <div class="text-xl font-bold">Takvim</div>
+      <div class="flex items-center gap-2">
+        <button id="calMonthBtn" class="px-3 py-1.5 rounded-lg border bg-green-50">Ay</button>
+        <button id="calWeekBtn" class="px-3 py-1.5 rounded-lg border">Hafta</button>
+        <button id="calTodayBtn" class="px-3 py-1.5 rounded-lg border">Bugün</button>
+      </div>
+    </div>
+
+    <!-- Month view -->
+    <div id="bigMonth" class="soft-card rounded-2xl p-4">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <button id="bigPrev" class="px-2 py-1 rounded-lg border">←</button>
+          <div id="bigTitle" class="px-2 font-semibold"></div>
+          <button id="bigNext" class="px-2 py-1 rounded-lg border">→</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-7 gap-2 text-xs text-gray-500 mb-2">
+        <div>Pzt</div><div>Sal</div><div>Çar</div><div>Per</div><div>Cum</div><div>Cmt</div><div>Paz</div>
+      </div>
+      <div id="bigGrid" class="cal-grid"></div>
+      <div class="text-xs text-gray-400 mt-2">Bir güne çift tıklayınca gün (saatlik) görünümü açılır.</div>
+    </div>
+
+    <!-- Week view -->
+    <div id="weekWrap" class="soft-card rounded-2xl p-3 mt-4 hidden">
+      <div class="grid grid-cols-8 gap-2 text-xs text-gray-500 px-1 pb-2">
+        <div></div><div>Pzt</div><div>Sal</div><div>Çar</div><div>Per</div><div>Cum</div><div>Cmt</div><div>Paz</div>
+      </div>
+      <div id="weekGrid" class="week-grid"></div>
+      <div class="text-xs text-gray-400 mt-2 px-1">Saat bloklarını sürükleyerek yer değiştirin, alt/üst kenardan sürükleyerek süreyi değiştirin.</div>
+    </div>
+  </section>
+
+  <!-- Diğer rotalar boş placeholder -->
+  <section id="route-daily" class="hidden soft-card rounded-2xl p-6 text-gray-500">Günlük plan ekranı burada geliştirilecek.</section>
+  <section id="route-team" class="hidden soft-card rounded-2xl p-6 text-gray-500">Ekip yönetimi mevcut (Yeni Görev / Düzenle modallarındaki kişi listesiyle entegre).</section>
+  <section id="route-reports" class="hidden soft-card rounded-2xl p-6 text-gray-500">Raporlar ekranı.</section>
+  <section id="route-templates" class="hidden soft-card rounded-2xl p-6 text-gray-500">Şablonlar ekranı.</section>
+  <section id="route-settings" class="hidden soft-card rounded-2xl p-6 text-gray-500">Ayarlar ekranı.</section>
+
+  <!-- İstatistik & Odak bar -->
+  <section class="flex flex-wrap items-center gap-2 my-5">
     <span id="stats" class="text-sm text-gray-500"></span>
     <span class="ml-auto text-xs text-gray-400">Görünüm: <b id="viewName">Liste</b></span>
   </section>
 
-  <!-- LIST -->
-  <section id="listView" class="space-y-3"></section>
-
-  <!-- KANBAN -->
-  <section id="kanbanView" class="hidden grid grid-cols-1 md:grid-cols-4 gap-4">
-    <div class="col soft-card rounded-2xl p-3">
-      <div class="sticky-head pb-2 bg-white flex items-center justify-between">
-        <h3 class="font-semibold">📦 BACKLOG</h3><button class="btn text-sm px-2 py-1 rounded-lg border hover:bg-gray-50" data-add="BACKLOG">➕</button>
-      </div>
-      <div id="col-BACKLOG" class="dropzone space-y-3 p-1" data-status="BACKLOG"></div><div class="text-xs text-gray-400 text-center py-2" data-empty="BACKLOG" hidden>Boş — buraya bırak</div>
+  <div id="focusBar" class="fixed bottom-3 left-0 right-0 flex justify-center pointer-events-none">
+    <div class="pointer-events-auto soft-card rounded-2xl px-4 py-3 flex items-center gap-3">
+      <span id="focusTask" class="text-sm">Odaklanılan görev yok</span>
+      <span id="timer" class="font-mono text-sm px-2 py-1 rounded bg-gray-100 dark:bg-gray-800">25:00</span>
+      <button id="startTimer" class="btn px-2 py-1 rounded-lg border hover:bg-gray-50">Başlat</button>
+      <button id="pauseTimer" class="btn px-2 py-1 rounded-lg border hover:bg-gray-50">Duraklat</button>
+      <button id="resetTimer" class="btn px-2 py-1 rounded-lg border hover:bg-gray-50">Sıfırla</button>
     </div>
-    <div class="col soft-card rounded-2xl p-3">
-      <div class="sticky-head pb-2 bg-white flex items-center justify-between">
-        <h3 class="font-semibold">📝 TODO</h3><button class="btn text-sm px-2 py-1 rounded-lg border hover:bg-gray-50" data-add="TODO">➕</button>
-      </div>
-      <div id="col-TODO" class="dropzone space-y-3 p-1" data-status="TODO"></div><div class="text-xs text-gray-400 text-center py-2" data-empty="TODO" hidden>Boş — buraya bırak</div>
-    </div>
-    <div class="col soft-card rounded-2xl p-3">
-      <div class="sticky-head pb-2 bg-white flex items-center justify-between">
-        <h3 class="font-semibold">⚙️ DOING</h3><button class="btn text-sm px-2 py-1 rounded-lg border hover:bg-gray-50" data-add="DOING">➕</button>
-      </div>
-      <div id="col-DOING" class="dropzone space-y-3 p-1" data-status="DOING"></div><div class="text-xs text-gray-400 text-center py-2" data-empty="DOING" hidden>Boş — buraya bırak</div>
-    </div>
-    <div class="col soft-card rounded-2xl p-3">
-      <div class="sticky-head pb-2 bg-white flex items-center justify-between">
-        <h3 class="font-semibold">✅ DONE</h3><button class="btn text-sm px-2 py-1 rounded-lg border hover:bg-gray-50" data-add="DONE">➕</button>
-      </div>
-      <div id="col-DONE" class="dropzone space-y-3 p-1" data-status="DONE"></div><div class="text-xs text-gray-400 text-center py-2" data-empty="DONE" hidden>Boş — buraya bırak</div>
-    </div>
-  </section>
-
+  </div>
 </main>
 
-<!-- Odak alt bar -->
-<div id="focusBar" class="fixed bottom-3 left-0 right-0 flex justify-center pointer-events-none">
-  <div class="pointer-events-auto bg-white border shadow-lg rounded-2xl px-4 py-3 flex items-center gap-3">
-    <span id="focusTask" class="text-sm text-gray-700">Odaklanılan görev yok</span>
-    <span id="timer" class="font-mono text-sm px-2 py-1 rounded bg-gray-100">25:00</span>
-    <button id="startTimer" class="btn px-2 py-1 rounded-lg border hover:bg-gray-50 text-sm">Başlat</button>
-    <button id="pauseTimer" class="btn px-2 py-1 rounded-lg border hover:bg-gray-50 text-sm">Duraklat</button>
-    <button id="resetTimer" class="btn px-2 py-1 rounded-lg border hover:bg-gray-50 text-sm">Sıfırla</button>
-  </div>
-</div>
-
-<!-- Odak tam ekran -->
-<div id="focusOverlay" class="hidden fixed inset-0 z-50 bg-black bg-opacity-80 flex items-center justify-center">
-  <div class="text-center text-white space-y-5">
-    <div id="foTitle" class="text-2xl font-bold"></div>
-    <div id="foDesc" class="max-w-lg mx-auto text-sm text-gray-200"></div>
-    <div id="foTimer" class="text-6xl font-extrabold tracking-wider">05:00</div>
-    <div class="flex items-center justify-center gap-3">
-      <button id="foStart" class="btn px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20">Başlat</button>
-      <button id="foPause" class="btn px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20">Duraklat</button>
-      <button id="foReset" class="btn px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20">Sıfırla</button>
-      <button id="foExit" class="btn px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600">Çık</button>
+<!-- YENİ GÖREV MODALI (tamamen yenilendi) -->
+<div id="createModal" class="modal">
+  <div class="modal-card w-full max-w-3xl rounded-2xl p-5 shadow-xl">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-lg">🆕 Yeni Görev</h3>
+      <button id="closeCreate" class="text-gray-500 hover:text-gray-300">Kapat</button>
     </div>
-  </div>
-</div>
 
-<!-- Plan modal -->
-<div id="planModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 backdrop p-4">
-  <div class="bg-white w-full max-w-xl rounded-2xl p-5 shadow-xl">
-    <div class="flex items-center justify-between mb-3">
-      <h3 class="font-bold text-lg">📅 Günlük Plan Önerisi</h3>
-      <button id="closePlan" class="text-gray-500 hover:text-gray-700">Kapat</button>
-    </div>
-    <div id="planContent" class="space-y-2 text-sm"></div>
-  </div>
-</div>
+    <form id="createForm" data-enter-submit class="grid grid-cols-1 md:grid-cols-12 gap-3 text-sm">
+      <input id="c_title" required placeholder="Görev başlığı" class="md:col-span-6 h-11 px-3 rounded-xl border"/>
+      <input id="c_labels" placeholder="Etiketler (virgülle)" class="md:col-span-6 h-11 px-3 rounded-xl border"/>
 
-<!-- Edit modal -->
-<div id="editModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 backdrop p-4">
-  <div class="bg-white w-full max-w-lg rounded-2xl p-5 shadow-xl">
-    <div class="flex items-center justify-between mb-3">
-      <h3 class="font-bold text-lg">✏️ Görevi Düzenle</h3>
-      <button id="closeEdit" class="text-gray-500 hover:text-gray-700">Kapat</button>
-    </div>
-    <form id="editForm" data-enter-submit class="grid grid-cols-1 md:grid-cols-12 gap-3 text-sm">
-      <input id="e_title" required class="md:col-span-7 h-11 px-3 rounded-xl border border-gray-200 focus:border-green-400 focus:ring-2 focus:ring-green-200 break-words" placeholder="Başlık"/>
-      <input id="e_labels" class="md:col-span-5 h-11 px-3 rounded-xl border border-gray-200 focus:border-green-400 focus:ring-2 focus:ring-green-200" placeholder="Etiketler (virgülle)"/>
-      <select id="e_priority" class="md:col-span-4 h-11 px-3 rounded-xl border border-gray-200 focus:border-green-400 focus:ring-2 focus:ring-green-200">
-        <option value="NORMAL">Normal</option><option value="HIGH">Yüksek</option><option value="LOW">Düşük</option>
-      </select>
-      <input id="e_due" type="date" class="md:col-span-4 h-11 px-3 rounded-xl border border-gray-200 focus:border-green-400 focus:ring-2 focus:ring-green-200"/>
-      <input id="e_est" type="number" min="0" class="md:col-span-4 h-11 px-3 rounded-xl border border-gray-200 focus:border-green-400 focus:ring-2 focus:ring-green-200" placeholder="Tahmin (dk)"/>
-      <select id="e_repeat" class="md:col-span-4 h-11 px-3 rounded-xl border border-gray-200 focus:border-green-400 focus:ring-2 focus:ring-green-200">
+      <label class="md:col-span-3 h-11 flex items-center gap-2 px-3 rounded-xl border">
+        <span class="text-xs text-gray-500">Öncelik</span>
+        <select id="c_priority" class="flex-1 bg-transparent outline-none">
+          <option value="NORMAL">Normal</option><option value="HIGH">Yüksek</option><option value="LOW">Düşük</option>
+        </select>
+      </label>
+      <input id="c_due" type="date" class="md:col-span-3 h-11 px-3 rounded-xl border"/>
+      <div id="c_due_human" class="md:col-span-3 text-xs text-green-700 font-medium"></div>
+      <input id="c_time" type="time" class="md:col-span-2 h-11 px-3 rounded-xl border" />
+      <input id="c_estimate" type="number" min="0" placeholder="Tahmin (dk)" class="md:col-span-2 h-11 px-3 rounded-xl border"/>
+      <select id="c_repeat" class="md:col-span-2 h-11 px-3 rounded-xl border">
         <option value="none">Tekrar yok</option><option value="daily">Günlük</option><option value="weekly">Haftalık</option><option value="monthly">Aylık</option>
       </select>
 
-      <!-- Chip'li assignee (edit) -->
-      <div class="md:col-span-12 relative">
-        <label class="block text-xs text-gray-500 mb-1">Atananlar</label>
-        <div id="e_chips" class="flex flex-wrap items-center gap-2 min-h-[44px] px-3 py-2 rounded-xl border border-gray-200 bg-white cursor-text"></div>
-        <div id="e_menu" class="menu hidden mt-2">
-          <input id="e_search" class="w-full mb-2 px-2 py-1.5 border rounded-lg text-sm" placeholder="Ara…"/>
-          <div id="e_list" class="space-y-1"></div>
-        </div>
-        <select id="e_assignees" multiple class="hidden"></select>
+      <div class="md:col-span-12">
+        <label class="block text-xs text-gray-500 mb-1">Atananlar / Ekip Grupları</label>
+        <div id="c_chipbox" class="flex flex-wrap items-center gap-2 min-h-[44px] px-3 py-2 rounded-xl border cursor-pointer"></div>
+        <div id="c_menu" class="assignee-menu hidden"></div>
       </div>
 
-      <textarea id="e_desc" class="md:col-span-12 px-3 py-2.5 rounded-xl border border-gray-200 focus:border-green-400 focus:ring-2 focus:ring-green-200" placeholder="Açıklama"></textarea>
+      <textarea id="c_desc" placeholder="Açıklama (opsiyonel)" class="md:col-span-12 px-3 py-2 rounded-xl border"></textarea>
 
-      <!-- Yorumlar + @mention -->
+      <button class="btn bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-medium md:col-span-12">Oluştur</button>
+    </form>
+  </div>
+</div>
+
+<!-- DÜZENLE MODALI (kişiler & yorumlar olduğu gibi) -->
+<div id="editModal" class="modal">
+  <div class="modal-card w-full max-w-3xl rounded-2xl p-5 shadow-xl">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-lg">✏️ Görevi Düzenle</h3>
+      <button id="closeEdit" class="text-gray-500 hover:text-gray-300">Kapat</button>
+    </div>
+
+    <form id="editForm" data-enter-submit class="grid grid-cols-1 md:grid-cols-12 gap-3 text-sm">
+      <input id="e_title" required class="md:col-span-6 h-11 px-3 rounded-xl border" placeholder="Başlık"/>
+      <input id="e_labels" class="md:col-span-6 h-11 px-3 rounded-xl border" placeholder="Etiketler (virgülle)"/>
+
+      <label class="md:col-span-3 h-11 flex items-center gap-2 px-3 rounded-xl border">
+        <span class="text-xs text-gray-500">Öncelik</span>
+        <select id="e_priority" class="flex-1 bg-transparent outline-none">
+          <option value="NORMAL">Normal</option><option value="HIGH">Yüksek</option><option value="LOW">Düşük</option>
+        </select>
+      </label>
+      <input id="e_due" type="date" class="md:col-span-3 h-11 px-3 rounded-xl border"/>
+      <div id="e_due_human" class="md:col-span-3 text-xs text-green-700 font-medium"></div>
+      <input id="e_time" type="time" class="md:col-span-2 h-11 px-3 rounded-xl border"/>
+      <input id="e_est" type="number" min="0" class="md:col-span-2 h-11 px-3 rounded-xl border" placeholder="Tahmin (dk)"/>
+      <select id="e_repeat" class="md:col-span-2 h-11 px-3 rounded-xl border">
+        <option value="none">Tekrar yok</option><option value="daily">Günlük</option><option value="weekly">Haftalık</option><option value="monthly">Aylık</option>
+      </select>
+
       <div class="md:col-span-12">
-        <h4 class="font-semibold text-sm mb-2">💬 Yorumlar</h4>
-        <div id="commentsList" class="space-y-2 max-h-40 overflow-auto border rounded-xl p-2"></div>
-        <div class="mt-2 flex gap-2 relative">
-          <input id="commentInput" class="flex-1 px-3 py-2 rounded-lg border text-sm" placeholder="@ad yazarak mention ekle…"/>
-          <button id="addComment" type="button" class="btn px-3 py-2 rounded-lg border hover:bg-gray-50 text-sm">Ekle</button>
-          <div id="mentionMenu" class="menu hidden mt-1"></div>
-        </div>
+        <label class="block text-xs text-gray-500 mb-1">Atananlar / Ekip Grupları</label>
+        <div id="e_chipbox" class="flex flex-wrap items-center gap-2 min-h-[44px] px-3 py-2 rounded-xl border cursor-pointer"></div>
+        <div id="e_menu" class="assignee-menu hidden"></div>
       </div>
 
-      <!-- Aktivite -->
-      <div class="md:col-span-12">
-        <h4 class="font-semibold text-sm mb-2">📜 Aktivite</h4>
-        <div id="activityList" class="space-y-1 max-h-40 overflow-auto border rounded-xl p-2 text-xs text-gray-600"></div>
+      <textarea id="e_desc" class="md:col-span-12 px-3 py-2.5 rounded-xl border" placeholder="Açıklama"></textarea>
+
+      <div class="md:col-span-12 soft-card rounded-xl p-3">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="font-semibold">💬 Yorumlar</h4>
+          <span id="cCount" class="text-xs text-gray-400"></span>
+        </div>
+        <div id="cList" class="space-y-2 max-h-48 overflow-auto pr-1"></div>
+        <div class="mt-2 flex gap-2">
+          <input id="cInput" class="flex-1 h-10 px-3 rounded-lg border" placeholder="Yorum ekle ve Enter’a bas"/>
+          <button id="cAdd" type="button" class="px-3 py-2 rounded-lg border hover:bg-gray-50 text-sm">Ekle</button>
+        </div>
       </div>
 
       <div class="md:col-span-12 flex justify-between gap-2 mt-1">
@@ -284,703 +367,23 @@
   </div>
 </div>
 
-<!-- Team modal (roller + yönetim) -->
-<div id="teamModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-  <div class="bg-white w-full max-w-3xl rounded-2xl p-5 shadow-xl">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="font-bold text-lg">👥 Ekip & Roller</h3>
-      <button id="closeTeam" class="text-gray-500 hover:text-gray-700">Kapat</button>
-    </div>
-
-    <!-- Rol Yönetimi (sadece owner/manager düzenler) -->
-    <details class="soft-card rounded-xl p-3 mb-4" id="roleBox">
-      <summary class="cursor-pointer font-semibold">🔐 Rol Yönetimi</summary>
-      <div class="mt-3 grid md:grid-cols-3 gap-3 text-sm">
-        <input id="roleName" class="h-11 px-3 rounded-xl border" placeholder="Yeni rol adı (örn. misafir)"/>
-        <label class="flex items-center gap-2 h-11 px-3 rounded-xl border">
-          <input type="checkbox" id="roleViewAll"/><span>Tüm görevleri görsün</span>
-        </label>
-        <label class="flex items-center gap-2 h-11 px-3 rounded-xl border">
-          <input type="checkbox" id="roleAssignAll"/><span>Herkese atayabilsin</span>
-        </label>
-      </div>
-      <div class="mt-2 flex justify-end">
-        <button id="addRole" class="btn h-10 px-4 rounded-xl border bg-gray-50 hover:bg-gray-100">Rol Ekle</button>
-      </div>
-      <div id="roleList" class="mt-3 text-sm"></div>
-      <p class="text-xs text-gray-500 mt-2">Not: Kurucu/Yönetici tüm izinlere sahiptir ve kaldırılamaz.</p>
-    </details>
-
-    <div class="soft-card rounded-xl p-3 mb-3">
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <input id="memberName" class="h-11 px-3 rounded-xl border" placeholder="Üye adı"/>
-        <select id="memberRole" class="h-11 px-3 rounded-xl border"></select>
-        <button id="addMember" class="btn h-11 rounded-xl border bg-gray-50 hover:bg-gray-100">Ekle</button>
-      </div>
-    </div>
-
-    <div class="grid md:grid-cols-2 gap-4 text-sm">
-      <div>
-        <h4 class="font-semibold mb-2">🏢 Yönetim (Kurucu/Yönetici)</h4>
-        <div id="mgrList" class="space-y-2"></div>
-      </div>
-      <div>
-        <h4 class="font-semibold mb-2">👤 Ekip Üyeleri</h4>
-        <div id="memList" class="space-y-2"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Templates -->
-<template id="taskTpl"></template>
-<template id="subTpl"></template>
-<template id="kanbanCardTpl"></template>
-
-<script>
-/* ---------- Utils & Storage ---------- */
-const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
-const KEY='nextotask_tasks_v11', KEY_USERS='nextotask_users_v3', KEY_ROLES='nextotask_roles_v1';
-const todayISO=()=>new Date().toISOString().slice(0,10);
-const fmtDate=d=>d?new Date(d).toLocaleDateString('tr-TR'):'—';
-const randColor=()=>['#6366F1','#10B981','#F59E0B','#EF4444','#3B82F6','#8B5CF6','#14B8A6'][Math.floor(Math.random()*7)];
-function load(k,f){ try{ return JSON.parse(localStorage.getItem(k)||JSON.stringify(f)); }catch{ return f } }
-function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
-function addActivity(t, text){ t.activity=t.activity||[]; t.activity.push({ at:new Date().toISOString(), by:currentUserId, text }); }
-
-/* ---------- Data ---------- */
-let tasks=load(KEY,[]), users=load(KEY_USERS,[]), customRoles=load(KEY_ROLES,[]);
-if(users.length===0){ users=[{id:'u_me', name:'Ben', color:randColor(), role:'owner'}]; save(KEY_USERS,users); }
-
-tasks.forEach(t=>{ if(!t.assigneeIds){ t.assigneeIds=t.assigneeId?[t.assigneeId]:[users[0].id]; delete t.assigneeId; } });
-
-let currentUserId=users[0].id;
-let currentFilter='all', selectedDate=todayISO(), currentView='list', searchTerm='', sortMode='created_desc', assigneeFilter='all';
-let selectedIds=new Set(), editingId=null;
-
-/* ---------- Roles ---------- */
-const BASE_ROLES=['owner','manager','member'];
-function getRoleConfig(role){
-  if(role==='owner'||role==='manager') return {viewAll:true, assignAll:true};
-  if(role==='member') return {viewAll:false, assignAll:false};
-  const r=customRoles.find(x=>x.name===role); 
-  return r ? {viewAll:!!r.viewAll, assignAll:!!r.assignAll} : {viewAll:false, assignAll:false};
-}
-function isAdmin(){ const r=userById(currentUserId)?.role||'member'; return r==='owner'||r==='manager'; }
-
-/* ---------- UI Helpers ---------- */
-const userById=id=>users.find(u=>u.id===id)||null;
-function avatarEl(u,size=22){ const el=document.createElement('span'); el.className='avatar'; el.style.width=el.style.height=size+'px'; el.style.background=u.color||'#999'; el.textContent=(u.name||'?').slice(0,1).toUpperCase(); return el; }
-
-/* ---------- Assignee permissions ---------- */
-function getAssignableUsers(){
-  const cfg=getRoleConfig(userById(currentUserId)?.role||'member');
-  return cfg.assignAll ? users : users.filter(u=>u.id===currentUserId);
-}
-
-/* ---------- Chip select (assignees) ---------- */
-function getSelectedAssignees(sel){
-  const ds = (sel.dataset.order||'').split(',').filter(Boolean);
-  const picked = new Set([...sel.selectedOptions].map(o=>o.value));
-  const ordered = ds.filter(id=>picked.has(id));
-  const rest = [...picked].filter(id=>!ds.includes(id));
-  return ordered.concat(rest);
-}
-function paintChipSelect(chipsSel, menuSel, searchSel, listSel, hiddenSel){
-  const chips=$(chipsSel), menu=$(menuSel), search=$(searchSel), list=$(listSel), hidden=$(hiddenSel);
-  function close(){ menu.classList.add('hidden'); }
-  function open(){ buildList(); menu.classList.remove('hidden'); search.value=''; search.focus(); }
-  function buildList(){
-    const src=getAssignableUsers();
-    const q=(search.value||'').toLowerCase();
-    list.innerHTML='';
-    src.filter(u=>u.name.toLowerCase().includes(q)).forEach(u=>{
-      const row=document.createElement('label'); row.className='flex items-center justify-between px-2 py-1 rounded hover:bg-gray-50 cursor-pointer';
-      const left=document.createElement('div'); left.className='flex items-center gap-2';
-      left.appendChild(avatarEl(u,18)); const nm=document.createElement('span'); nm.textContent=u.name; left.appendChild(nm);
-      const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=[...hidden.selectedOptions].some(o=>o.value===u.id);
-      cb.onchange=()=>{ setSelected(u.id, cb.checked); };
-      row.appendChild(left); row.appendChild(cb); list.appendChild(row);
-    });
-  }
-  function setSelected(id, yes){
-    // izin yoksa kendinden başkasını seçtirmeyelim
-    const allowed=getAssignableUsers().map(u=>u.id);
-    if(yes && !allowed.includes(id)) return;
-    [...hidden.options].forEach(o=>{ if(o.value===id) o.selected=!!yes; });
-    // eğer assignAll değilse tek seçenek: current user
-    const cfg=getRoleConfig(userById(currentUserId)?.role||'member');
-    if(!cfg.assignAll){
-      [...hidden.options].forEach(o=>{ o.selected = (o.value===currentUserId); });
-    }
-    drawChips();
-  }
-  function drawChips(){
-    chips.innerHTML='';
-    const pick=getSelectedAssignees(hidden).map(id=>users.find(u=>u.id===id)).filter(Boolean);
-    if(pick.length===0){ const ph=document.createElement('span'); ph.className='text-gray-400 text-sm'; ph.textContent='Kişi ekleyin…'; chips.appendChild(ph); }
-    pick.forEach(u=>{
-      const c=document.createElement('span'); c.className='chip'; c.draggable=true; c.dataset.id=u.id;
-      c.appendChild(avatarEl(u,18)); c.appendChild(document.createTextNode(u.name));
-      const x=document.createElement('span'); x.className='x'; x.textContent='✕';
-      x.onclick=()=> setSelected(u.id,false);
-      c.appendChild(x);
-      // drag reorder
-      c.addEventListener('dragstart', (ev)=>{ ev.dataTransfer.setData('text/plain', u.id); c.classList.add('opacity-50'); });
-      c.addEventListener('dragend', ()=> c.classList.remove('opacity-50'));
-      c.addEventListener('dragover', (ev)=>{ ev.preventDefault(); });
-      c.addEventListener('drop', (ev)=>{
-        ev.preventDefault();
-        const from=ev.dataTransfer.getData('text/plain'); const to=u.id;
-        if(!from || from===to) return;
-        const order=getSelectedAssignees(hidden); const fi=order.indexOf(from), ti=order.indexOf(to);
-        if(fi<0||ti<0) return;
-        order.splice(ti,0, order.splice(fi,1)[0]);
-        hidden.dataset.order=order.join(',');
-        drawChips();
-      });
-      chips.appendChild(c);
-    });
-    hidden.dataset.order = pick.map(p=>p.id).join(',');
-  }
-  chips.addEventListener('click', open);
-  document.addEventListener('click', (e)=>{ if(!chips.contains(e.target) && !menu.contains(e.target)) close(); });
-  search.addEventListener('input', buildList);
-  drawChips(); // initial
-}
-
-/* ---------- Fill selects (assignee filter + forms) ---------- */
-function fillAssigneeSelects(){
-  const f=$('#assigneeFilter'); f.innerHTML='<option value="all">Atanan: Tümü</option>';
-  users.forEach(u=>{ const o=document.createElement('option'); o.value=u.id; o.textContent=u.name; f.appendChild(o); });
-  const q=$('#assignees'), e=$('#e_assignees'); q.innerHTML=''; e.innerHTML='';
-  // gizli selectlere sadece atanabilir kişileri koy
-  getAssignableUsers().forEach(u=>{ const o1=document.createElement('option'); o1.value=u.id; o1.textContent=u.name; q.appendChild(o1); });
-  getAssignableUsers().forEach(u=>{ const o2=document.createElement('option'); o2.value=u.id; o2.textContent=u.name; e.appendChild(o2); });
-  paintChipSelect('#chipsAssignees','#assigneeMenu','#assigneeSearch','#assigneeList','#assignees');
-  paintChipSelect('#e_chips','#e_menu','#e_search','#e_list','#e_assignees');
-}
-fillAssigneeSelects();
-
-/* ---------- Week strip ---------- */
-function buildWeek(centerISO=todayISO()){
-  const wrap=$('#weekStrip'); wrap.innerHTML='';
-  const base=new Date(centerISO);
-  for(let i=-3;i<=3;i++){
-    const d=new Date(base); d.setDate(base.getDate()+i);
-    const iso=d.toISOString().slice(0,10);
-    const btn=document.createElement('button');
-    btn.className='day w-full rounded-xl border px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100';
-    btn.dataset.date=iso;
-    btn.innerHTML=`<div class="font-semibold">${d.toLocaleDateString('tr-TR',{weekday:'short'})}</div><div class="text-gray-600">${d.getDate()}.${d.getMonth()+1}</div>`;
-    if(iso===selectedDate) btn.classList.add('bg-white','ring-2','ring-green-200');
-    btn.addEventListener('dragover',ev=>{ ev.preventDefault(); btn.classList.add('drag-over'); },true);
-    btn.addEventListener('dragleave',()=>btn.classList.remove('drag-over'),true);
-    btn.addEventListener('drop',ev=>{
-      ev.preventDefault(); btn.classList.remove('drag-over');
-      const id=ev.dataTransfer.getData('text/plain');
-      const t=tasks.find(x=>x.id===id); if(t){ t.dueDate=iso; addActivity(t,'tarih atandı: '+fmtDate(iso)); save(KEY,tasks); render(); }
-    },true);
-    btn.addEventListener('click',()=>{ selectedDate=iso; $('#filter').value='date'; currentFilter='date'; render(); });
-    wrap.appendChild(btn);
-  }
-}
-
-/* ---------- Enter=submit & ESC=close (global) ---------- */
-document.addEventListener('keydown', (e)=>{
-  if(e.key==='Escape'){
-    ['editModal','teamModal','planModal','focusOverlay'].forEach(id=> $('#'+id).classList.add('hidden'));
-  }
-});
-document.querySelectorAll('form[data-enter-submit]').forEach(form=>{
-  form.addEventListener('keydown',(e)=>{
-    const isTextArea = e.target.tagName==='TEXTAREA';
-    if(e.key==='Enter' && (!isTextArea || (isTextArea && e.ctrlKey))){
-      e.preventDefault(); form.requestSubmit();
-    }
-  });
-});
-
-/* ---------- Quick Add ---------- */
-$('#taskForm').addEventListener('submit', e=>{
-  e.preventDefault();
-  const typedDue=$('#due').value || null;
-  const autoDue = typedDue || (currentFilter==='date' ? selectedDate : todayISO());
-
-  const assignees = getSelectedAssignees($('#assignees'));
-  const finalAssignees = assignees.length? assignees : [currentUserId];
-
-  const t={
-    id:'t_'+Date.now().toString(36),
-    title:$('#title').value.trim(),
-    description:$('#desc').value.trim()||'',
-    labels:($('#labels').value||'').split(',').map(s=>s.trim()).filter(Boolean),
-    priority:$('#priority').value,
-    dueDate:autoDue,
-    estimate:parseInt($('#estimate').value||'0',10)||0,
-    repeat:$('#repeat').value||'none',
-    assigneeIds:finalAssignees,
-    status:'TODO', subtasks:[], comments:[], activity:[], createdAt:new Date().toISOString()
-  };
-  if(!t.title) return;
-  addActivity(t,'oluşturuldu');
-  tasks.unshift(t); save(KEY,tasks);
-  currentFilter='pending'; $('#filter').value='pending';
-  e.target.reset(); fillAssigneeSelects(); render();
-});
-
-/* ---------- Search/Filter/Sort ---------- */
-$('#search').addEventListener('input', e=>{ searchTerm=e.target.value.toLowerCase(); render(); });
-$('#filter').addEventListener('change', e=>{ currentFilter=e.target.value; render(); });
-$('#sort').addEventListener('change', e=>{ sortMode=e.target.value; render(); });
-$('#assigneeFilter').addEventListener('change', e=>{ assigneeFilter=e.target.value; render(); });
-
-/* ---------- Bulk ---------- */
-$('#bulkDone').addEventListener('click', ()=>{ tasks.forEach(t=>{ if(selectedIds.has(t.id)) t.status='DONE' }); save(KEY,tasks); render(); });
-$('#bulkUndo').addEventListener('click', ()=>{ tasks.forEach(t=>{ if(selectedIds.has(t.id)) t.status='TODO' }); save(KEY,tasks); render(); });
-$('#bulkDel').addEventListener('click', ()=>{ tasks=tasks.filter(t=>!selectedIds.has(t.id)); selectedIds.clear(); save(KEY,tasks); render(); });
-
-/* ---------- Toggle view ---------- */
-$('#toggleView').addEventListener('click', ()=>{ currentView=currentView==='list'?'kanban':'list'; render(); });
-
-/* ---------- Daily plan ---------- */
-$('#dailyPlanBtn').addEventListener('click', ()=>{
-  const start=9*60; let cur=start; const today=todayISO();
-  const pool=visibilityFilter(tasks).filter(t=>(t.status!=='DONE')&&(!t.dueDate||t.dueDate<=today))
-    .sort((a,b)=>{ const p={HIGH:2,NORMAL:1,LOW:0}; const da=a.dueDate?Date.parse(a.dueDate):0, db=b.dueDate?Date.parse(b.dueDate):0; if(da!==db) return da-db; return p[b.priority]-p[a.priority]; });
-  const plan=[];
-  for(const t of pool){
-    const est=t.estimate|| (t.subtasks?.length? t.subtasks.length*15:30);
-    plan.push({title:t.title, from:mins(cur), to:mins(cur+est), est}); cur+=est+5; if(cur>=18*60) break;
-  }
-  const box=$('#planContent'); box.innerHTML=plan.length?'':'<div class="text-gray-500">Bugün için uygun plan bulunamadı.</div>';
-  plan.forEach(s=>{ const row=document.createElement('div'); row.className='flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2'; row.innerHTML=`<span class="font-medium">${s.from}–${s.to}</span><span>${s.title}</span><span class="text-xs text-gray-500">${s.est} dk</span>`; box.appendChild(row); });
-  $('#planModal').classList.remove('hidden');
-});
-$('#closePlan').addEventListener('click', ()=> $('#planModal').classList.add('hidden'));
-function mins(m){ const h=Math.floor(m/60).toString().padStart(2,'0'), mm=(m%60).toString().padStart(2,'0'); return `${h}:${mm}` }
-
-/* ---------- Visibility + Filter ---------- */
-function visibilityFilter(arr){
-  const me=userById(currentUserId)||{role:'member'};
-  const cfg=getRoleConfig(me.role);
-  if(cfg.viewAll) return arr;
-  return arr.filter(t=> (t.assigneeIds||[]).includes(currentUserId));
-}
-function applyFilter(arr){
-  let out=visibilityFilter(arr).filter(t=>{
-    const hay=(t.title+' '+t.description+' '+(t.labels||[]).join(' ')).toLowerCase();
-    return hay.includes(searchTerm);
-  });
-  if(assigneeFilter!=='all') out=out.filter(t=> (t.assigneeIds||[]).includes(assigneeFilter));
-  const today=todayISO();
-  if(currentFilter==='date') out=out.filter(t=>(t.dueDate||'').slice(0,10)===selectedDate);
-  if(currentFilter==='today') out=out.filter(t=>(t.dueDate||'').slice(0,10)===today && t.status!=='DONE');
-  if(currentFilter==='upcoming') out=out.filter(t=>t.status!=='DONE' && t.dueDate && (Date.parse(t.dueDate)-Date.now())<=7*86400000 && (t.dueDate>=today));
-  if(currentFilter==='overdue') out=out.filter(t=>t.status!=='DONE' && t.dueDate && t.dueDate<today);
-  if(currentFilter==='pending') out=out.filter(t=>t.status!=='DONE');
-  if(currentFilter==='done') out=out.filter(t=>t.status==='DONE');
-  return out;
-}
-function applyFilterAndSort(arr){
-  const out=applyFilter(arr).slice();
-  if(sortMode==='created_desc') out.sort((a,b)=> Date.parse(b.createdAt)-Date.parse(a.createdAt));
-  if(sortMode==='created_asc') out.sort((a,b)=> Date.parse(a.createdAt)-Date.parse(b.createdAt));
-  if(sortMode==='due_asc') out.sort((a,b)=> (Date.parse(a.dueDate||'9999-12-31') - Date.parse(b.dueDate||'9999-12-31')));
-  if(sortMode==='due_desc') out.sort((a,b)=> (Date.parse(b.dueDate||'0001-01-01') - Date.parse(a.dueDate||'0001-01-01')));
-  if(sortMode==='priority_desc'){ const p={HIGH:2,NORMAL:1,LOW:0}; out.sort((a,b)=> p[b.priority]-p[a.priority]); }
-  return out;
-}
-
-/* ---------- Render ---------- */
-function render(){
-  buildWeek(selectedDate);
-
-  const od=visibilityFilter(tasks).filter(t=>t.status!=='DONE' && t.dueDate && t.dueDate<todayISO()).length;
-  $('#alertBar').classList.toggle('hidden', od===0);
-  if(od>0) $('#alertText').textContent=`Geciken ${od} görevin var. Filtre: Geciken ile bakabilirsin.`;
-
-  const visible=visibilityFilter(tasks);
-  const total=visible.length, done=visible.filter(t=>t.status==='DONE').length;
-  const estPending=visible.filter(t=>t.status!=='DONE').reduce((s,t)=>s+(t.estimate||0),0);
-  const estDone=visible.filter(t=>t.status==='DONE').reduce((s,t)=>s+(t.estimate||0),0);
-  $('#stats').textContent=`Toplam: ${total} • Bekleyen: ${total-done} • Tamamlanan: ${done} • Tahmin Bekleyen: ${estPending} dk • Tam: ${estDone} dk`;
-  $('#viewName').textContent=currentView==='list'?'Liste':'Kanban';
-
-  if(currentView==='list'){ $('#listView').classList.remove('hidden'); $('#kanbanView').classList.add('hidden'); $('#toggleView').textContent='Kanban Görünüm'; renderList(); }
-  else { $('#listView').classList.add('hidden'); $('#kanbanView').classList.remove('hidden'); $('#toggleView').textContent='Liste Görünüm'; renderKanban(); }
-}
-
-/* ---------- LIST ---------- */
-function renderList(){
-  const list=$('#listView'); list.innerHTML='';
-  selectedIds.forEach(id=>{ if(!tasks.find(t=>t.id===id)) selectedIds.delete(id); });
-  const tpl=document.querySelector('#taskTpl'), subTpl=document.querySelector('#subTpl');
-  const arr=applyFilterAndSort(tasks);
-  if(!arr.length){ const empty=document.createElement('div'); empty.className='soft-card rounded-2xl p-6 text-center text-gray-500'; empty.textContent='Görev yok. Üstten ekleyin veya filtreyi değiştirin.'; list.appendChild(empty); return; }
-
-  arr.forEach(t=>{
-    const node=tpl.content.cloneNode(true);
-    const root=node.querySelector('.task'); root.dataset.id=t.id;
-    root.classList.toggle('selected', selectedIds.has(t.id));
-    root.addEventListener('click', (e)=>{ if(e.target.closest('button,input,textarea,select,summary')) return; toggleSelect(t.id, root); });
-    root.addEventListener('dblclick', ()=> openEdit(t));
-    root.addEventListener('dragstart',ev=>{ ev.dataTransfer.effectAllowed='move'; ev.dataTransfer.setData('text/plain', t.id); });
-
-    const ttl=node.querySelector('.ttl'); ttl.textContent=t.title; ttl.classList.add('break-words');
-    const desc=node.querySelector('.desc'); desc.textContent=t.description||''; desc.classList.add('break-words');
-    const pill=node.querySelector('.pill');
-    const meta=node.querySelector('.meta'); meta.textContent=`Tarih: ${fmtDate(t.dueDate)} • Oluşturma: ${fmtDate(t.createdAt)}`;
-
-    ttl.addEventListener('blur', ()=>{ const v=ttl.textContent.trim(); if(v && v!==t.title){ t.title=v; addActivity(t,'başlık güncellendi'); save(KEY,tasks); }});
-    desc.addEventListener('blur', ()=>{ const v=desc.textContent.trim(); if(v!==t.description){ t.description=v; addActivity(t,'açıklama güncellendi'); save(KEY,tasks); }});
-
-    let pillText='Normal', pillCls='bg-gray-100 text-gray-700';
-    if(t.priority==='HIGH'){ pillText='Yüksek'; pillCls='bg-red-100 text-red-700'; }
-    if(t.priority==='LOW'){ pillText='Düşük'; pillCls='bg-yellow-100 text-yellow-700'; }
-    pill.textContent=pillText; pill.className=`pill px-2 py-0.5 rounded-full text-xs ${pillCls}`;
-
-    const tags=node.querySelector('.tags'); tags.innerHTML='';
-    (t.labels||[]).forEach(l=>{ const s=document.createElement('span'); s.className='px-2 py-0.5 rounded-full text-xs bg-green-50 text-green-700 border border-green-100'; s.textContent='#'+l; tags.appendChild(s); });
-    tags.addEventListener('click',()=>{ const val=prompt('Etiketleri virgülle gir', (t.labels||[]).join(', ')); if(val!==null){ t.labels=val.split(',').map(s=>s.trim()).filter(Boolean); addActivity(t,'etiketler güncellendi'); save(KEY,tasks); render(); } });
-
-    const aWrap=node.querySelector('.assignees'); aWrap.innerHTML='';
-    (t.assigneeIds||[]).forEach(id=> aWrap.appendChild(avatarEl(userById(id)||users[0])) );
-
-    node.querySelector('.estimate').textContent=t.estimate?`• ${t.estimate} dk`:'';
-
-    const chk=node.querySelector('.chk'); chk.checked=t.status==='DONE';
-    if(t.status==='DONE') ttl.classList.add('line-through','text-gray-400');
-    chk.addEventListener('change', ()=>{ 
-      t.status=chk.checked?'DONE':'TODO'; 
-      addActivity(t, chk.checked?'tamamlandı':'beklemeye alındı');
-      if(chk.checked && t.repeat && t.repeat!=='none'){ const nd=nextDate(t.dueDate||todayISO(), t.repeat); const clone={...t, id:'t_'+Math.random().toString(36).slice(2), status:'TODO', createdAt:new Date().toISOString(), dueDate:nd}; addActivity(clone,'tekrarlayan görev oluşturuldu'); tasks.push(clone); }
-      save(KEY,tasks); render(); 
-    });
-
-    const subsWrap=node.querySelector('.subs');
-    function paintSubs(){
-      subsWrap.innerHTML='';
-      (t.subtasks||[]).forEach(s=>{
-        const sn=subTpl.content.cloneNode(true); const c=sn.querySelector('.s-chk'); const st=sn.querySelector('.s-ttl');
-        c.checked=!!s.done; st.textContent=s.title; if(s.done) st.classList.add('line-through','text-gray-400');
-        c.addEventListener('change', ()=>{ s.done=c.checked; save(KEY,tasks); });
-        subsWrap.appendChild(sn);
-      });
-    }
-    paintSubs();
-    const subInput=node.querySelector('.sub-input');
-    node.querySelector('.sub-add').addEventListener('click', ()=> addSubtaskFromInput(t, subInput, paintSubs));
-    subInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addSubtaskFromInput(t, subInput, paintSubs); }});
-
-    node.querySelector('.btn-del').addEventListener('click', ()=>{ tasks=tasks.filter(x=>x.id!==t.id); save(KEY,tasks); render(); });
-    node.querySelector('.btn-edit').addEventListener('click', ()=> openEdit(t));
-    node.querySelector('.btn-focus').addEventListener('click', ()=> openFocus(t));
-
-    const sel=node.querySelector('.sel'); sel.checked=selectedIds.has(t.id);
-    sel.addEventListener('change', ()=>{ sel.checked?selectedIds.add(t.id):selectedIds.delete(t.id); root.classList.toggle('selected', sel.checked); });
-
-    list.appendChild(node);
-  });
-}
-
-/* ---------- Kanban ---------- */
-function renderKanban(){
-  const cols=['BACKLOG','TODO','DOING','DONE'];
-  $$('[data-add]').forEach(btn=>{
-    btn.onclick=()=>{
-      const st=btn.getAttribute('data-add');
-      const title=prompt('Görev başlığı:'); if(!title) return;
-      const t={ id:'t_'+Date.now().toString(36),
-        title, description:'', labels:[], priority:'NORMAL',
-        dueDate:(currentFilter==='date'? selectedDate : todayISO()), estimate:0, repeat:'none',
-        assigneeIds:[currentUserId], status:st, subtasks:[], comments:[], activity:[], createdAt:new Date().toISOString()
-      };
-      addActivity(t,'oluşturuldu'); tasks.push(t); save(KEY,tasks); render();
-    };
-  });
-  cols.forEach(st=>{
-    const col=$('#col-'+st); col.innerHTML='';
-    makeDroppable(col, (taskId, beforeId)=> moveTask(taskId, st, beforeId));
-    const cards=applyFilter(tasks.filter(t=>t.status===st));
-    cards.forEach(t=>{
-      const node=document.querySelector('#kanbanCardTpl').content.cloneNode(true);
-      const card=node.querySelector('.kcard'); card.dataset.id=t.id;
-      node.querySelector('.k-ttl').textContent=t.title;
-      node.querySelector('.k-meta').textContent=`${t.labels?.map(l=>'#'+l).join(' ')||''} • ${fmtDate(t.dueDate)} • ${t.estimate? t.estimate+' dk':''}`;
-      const as=node.querySelector('.k-assignees'); as.innerHTML=''; (t.assigneeIds||[]).forEach(id=> as.appendChild(avatarEl(userById(id)||users[0])) );
-      const isSel=selectedIds.has(t.id); card.classList.toggle('selected', isSel);
-      card.addEventListener('click', (e)=>{ if(e.target.closest('button,input')) return; toggleSelect(t.id, card); });
-      card.addEventListener('dblclick', ()=> openEdit(t));
-      card.addEventListener('dragstart', ev=>{ ev.dataTransfer.effectAllowed='move'; ev.dataTransfer.setData('text/plain', t.id); setTimeout(()=>card.classList.add('opacity-50'),0); });
-      card.addEventListener('dragend', ()=> card.classList.remove('opacity-50'));
-      node.querySelector('.k-sub').addEventListener('click', ()=>{ const val=prompt('Alt görev başlığı:'); if(!val) return; t.subtasks=t.subtasks||[]; t.subtasks.push({title:val,done:false}); addActivity(t,'alt görev eklendi'); save(KEY,tasks); render(); });
-      node.querySelector('.k-edit').addEventListener('click', ()=> openEdit(t));
-      col.appendChild(node);
-    });
-    const emptyEl=document.querySelector(`[data-empty="${st}"]`); if(emptyEl) emptyEl.hidden=cards.length!==0;
-  });
-}
-function makeDroppable(el, onDrop){
-  el.addEventListener('dragover', ev=>{ ev.preventDefault(); ev.stopPropagation(); ev.dataTransfer.dropEffect='move'; el.classList.add('drag-over'); }, true);
-  el.addEventListener('dragleave', ()=> el.classList.remove('drag-over'), true);
-  el.addEventListener('drop', ev=>{
-    ev.preventDefault(); ev.stopPropagation(); el.classList.remove('drag-over');
-    const id=ev.dataTransfer.getData('text/plain');
-    const beforeCard=ev.target.closest('.kcard'); const beforeId=beforeCard? beforeCard.dataset.id:null;
-    if(id) onDrop(id, beforeId);
-  }, true);
-}
-function moveTask(id,newStatus,beforeId){
-  const t=tasks.find(x=>x.id===id); if(!t) return;
-  const fromIndex=tasks.indexOf(t); tasks.splice(fromIndex,1); t.status=newStatus;
-  if(beforeId){ const idx=tasks.findIndex(x=>x.id===beforeId); tasks.splice(idx>=0?idx:tasks.length,0,t); }
-  else { let insertAt=tasks.length; for(let i=tasks.length-1;i>=0;i--){ if(tasks[i].status===newStatus){ insertAt=i+1; break; } } tasks.splice(insertAt,0,t); }
-  addActivity(t,'kanban: '+newStatus+' sütununa taşındı');
-  save(KEY,tasks); render();
-}
-
-/* ---------- Edit modal ---------- */
-function openEdit(t){
-  editingId=t.id;
-  $('#e_title').value=t.title; $('#e_desc').value=t.description||''; $('#e_labels').value=(t.labels||[]).join(', ');
-  $('#e_priority').value=t.priority; $('#e_due').value=t.dueDate||''; $('#e_est').value=t.estimate||0; $('#e_repeat').value=t.repeat||'none';
-  // atanabilir kişiler
-  const sel=$('#e_assignees'); const allowed=getAssignableUsers().map(u=>u.id);
-  [...sel.options].forEach(o=>{ o.selected=(t.assigneeIds||[]).includes(o.value) && allowed.includes(o.value); });
-  // eğer kullanıcı atanamaz kişileri görmüyorsa mevcudu koruyalım (kaydetmediği sürece)
-  paintChipSelect('#e_chips','#e_menu','#e_search','#e_list','#e_assignees');
-  paintComments(t); paintActivity(t);
-  $('#editModal').classList.remove('hidden');
-  $('#e_delete').onclick=()=>{ tasks=tasks.filter(x=>x.id!==t.id); save(KEY,tasks); closeEdit(); render(); };
-}
-$('#editForm').addEventListener('submit', e=>{
-  e.preventDefault();
-  const t=tasks.find(x=>x.id===editingId); if(!t) return;
-  const prevAss = (t.assigneeIds||[]).slice();
-  const prevTitle=t.title, prevDesc=t.description, prevEst=t.estimate, prevDue=t.dueDate, prevPri=t.priority, prevLabels=(t.labels||[]).join(',');
-
-  t.title=$('#e_title').value.trim()||t.title;
-  t.description=$('#e_desc').value||'';
-  t.labels=($('#e_labels').value||'').split(',').map(s=>s.trim()).filter(Boolean);
-  t.priority=$('#e_priority').value;
-  t.dueDate=$('#e_due').value||null;
-  t.estimate=parseInt($('#e_est').value||'0',10)||0;
-  t.repeat=$('#e_repeat').value||'none';
-  const allowedIds=getAssignableUsers().map(u=>u.id);
-  const picked=getSelectedAssignees($('#e_assignees')).filter(id=>allowedIds.includes(id));
-  t.assigneeIds=picked.length? picked : t.assigneeIds; // izin yoksa eskisini koru
-
-  if(prevTitle!==t.title) addActivity(t,'başlık güncellendi');
-  if(prevDesc!==t.description) addActivity(t,'açıklama güncellendi');
-  if(prevEst!==t.estimate) addActivity(t,`tahmin ${prevEst||0}→${t.estimate} dk`);
-  if(prevDue!==t.dueDate) addActivity(t,`tarih ${fmtDate(prevDue)}→${fmtDate(t.dueDate)}`);
-  if(prevPri!==t.priority) addActivity(t,`öncelik ${prevPri}→${t.priority}`);
-  if(prevLabels!==(t.labels||[]).join(',')) addActivity(t,'etiketler güncellendi');
-  if(JSON.stringify(prevAss)!==JSON.stringify(t.assigneeIds)){
-    const names=t.assigneeIds.map(id=>userById(id)?.name||''); addActivity(t,'atananlar: '+names.join(', '));
-  }
-
-  save(KEY,tasks); closeEdit(); render();
-});
-function closeEdit(){ $('#editModal').classList.add('hidden'); editingId=null; }
-$('#closeEdit').addEventListener('click', closeEdit);
-
-/* ---------- Comments + @mention ---------- */
-function paintComments(t){
-  const box=$('#commentsList'); box.innerHTML='';
-  (t.comments||[]).forEach(c=>{
-    const u=userById(c.by)||users[0];
-    const row=document.createElement('div'); row.className='flex items-start gap-2';
-    const av=avatarEl(u,20);
-    const body=document.createElement('div'); body.className='bg-gray-50 border rounded-xl px-3 py-2 flex-1';
-    body.innerHTML=`<div class="text-xs text-gray-500">${u.name} • ${new Date(c.at).toLocaleString('tr-TR')}</div>
-                    <div class="text-sm">${renderMentions(c.text)}</div>`;
-    row.appendChild(av); row.appendChild(body); box.appendChild(row);
-  });
-}
-function renderMentions(text){
-  const names=users.map(u=>u.name).sort((a,b)=>b.length-a.length);
-  let out=text;
-  names.forEach(n=>{
-    const rx=new RegExp('(^|\\s)@'+escapeReg(n)+'(\\b)','g');
-    out=out.replace(rx, `$1<span class="mention">@${n}</span>$2`);
-  });
-  return out;
-}
-function escapeReg(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
-function parseMentions(text){
-  const found=new Set(); const rx=/@([^\s@,.;:!?#]+)/g; let m;
-  while((m=rx.exec(text))){ const token=m[1].toLowerCase(); const u=users.find(x=>x.name.toLowerCase()===token); if(u) found.add(u.id); }
-  return [...found];
-}
-const ci=$('#commentInput'), mm=$('#mentionMenu');
-ci.addEventListener('input', ()=> handleMentionAutosuggest(ci, mm));
-ci.addEventListener('keydown', e=>{
-  if(e.key==='Enter' && !e.ctrlKey){ e.preventDefault(); $('#addComment').click(); }
-});
-$('#addComment').addEventListener('click', ()=>{
-  const t=tasks.find(x=>x.id===editingId); if(!t) return;
-  const val=ci.value.trim(); if(!val) return;
-  const mentions=parseMentions(val);
-  t.comments=t.comments||[]; t.comments.push({ text:val, by:currentUserId, at:new Date().toISOString(), mentions });
-  addActivity(t,'yorum eklendi');
-  ci.value=''; mm.classList.add('hidden'); save(KEY,tasks); paintComments(t);
-});
-function handleMentionAutosuggest(inputEl, menuEl){
-  const cursor=inputEl.selectionStart;
-  const text=inputEl.value.slice(0,cursor);
-  const at=text.lastIndexOf('@');
-  if(at<0){ menuEl.classList.add('hidden'); return; }
-  const q = text.slice(at+1).toLowerCase();
-  if(q.length===0){ menuEl.classList.add('hidden'); return; }
-  const list = users.filter(u=>u.name.toLowerCase().startsWith(q));
-  if(!list.length){ menuEl.classList.add('hidden'); return; }
-  menuEl.innerHTML='';
-  list.forEach(u=>{
-    const item=document.createElement('div'); item.className='px-2 py-1 rounded hover:bg-gray-50 cursor-pointer flex items-center gap-2';
-    item.appendChild(avatarEl(u,18)); item.appendChild(document.createTextNode(u.name));
-    item.onclick=()=>{
-      const before=inputEl.value.slice(0,at);
-      const after=inputEl.value.slice(cursor);
-      inputEl.value = `${before}@${u.name} ${after}`;
-      inputEl.focus();
-      menuEl.classList.add('hidden');
-    };
-    menuEl.appendChild(item);
-  });
-  menuEl.classList.remove('hidden');
-}
-
-/* ---------- Activity ---------- */
-function paintActivity(t){
-  const box=$('#activityList'); box.innerHTML='';
-  (t.activity||[]).slice().reverse().forEach(a=>{
-    const u=userById(a.by)||{name:'Sistem'}; 
-    const row=document.createElement('div');
-    row.innerHTML=`<span class="text-gray-500">${new Date(a.at).toLocaleString('tr-TR')}</span> — <b>${u.name}</b>: ${a.text}`;
-    box.appendChild(row);
-  });
-}
-
-/* ---------- Subtask helper ---------- */
-function addSubtaskFromInput(t, input, repaint){
-  const val=input.value.trim(); if(!val) return;
-  t.subtasks=t.subtasks||[]; t.subtasks.push({ title:val, done:false });
-  addActivity(t,'alt görev eklendi');
-  input.value=''; save(KEY,tasks); repaint();
-}
-
-/* ---------- Selection helper ---------- */
-function toggleSelect(id, el){ if(selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id); if(el) el.classList.toggle('selected'); }
-
-/* ---------- Repeat helper ---------- */
-function nextDate(d,type){ const base=new Date(d||todayISO()); const n=new Date(base);
-  if(type==='daily') n.setDate(base.getDate()+1); if(type==='weekly') n.setDate(base.getDate()+7); if(type==='monthly') n.setMonth(base.getMonth()+1);
-  return n.toISOString().slice(0,10);
-}
-
-/* ---------- Focus mode ---------- */
-let focusTaskId=null, timerSec=25*60, timerInt=null, onBreak=false;
-function updateTimerLabel(){ const m=Math.floor(timerSec/60).toString().padStart(2,'0'); const s=(timerSec%60).toString().padStart(2,'0'); $('#timer').textContent=`${m}:${s}${onBreak?' • mola':''}`; $('#foTimer').textContent=`${m}:${s}`; }
-function setFocusDurationFromTask(t){
-  const base = t.estimate && t.estimate>0 ? t.estimate : 25;
-  const minutes = Math.max(5, base - 5); // tahmin - 5 dk
-  timerSec = minutes * 60; onBreak=false; updateTimerLabel();
-}
-function openFocus(t){ focusTaskId=t.id; $('#focusTask').textContent='Odak: '+t.title; setFocusDurationFromTask(t); $('#foTitle').textContent=t.title; $('#foDesc').textContent=t.description||''; $('#focusOverlay').classList.remove('hidden'); }
-function stopInterval(){ if(timerInt){ clearInterval(timerInt); timerInt=null; } }
-$('#foStart').addEventListener('click', ()=>{ if(timerInt) return; timerInt=setInterval(()=>{ timerSec--; if(timerSec<=0){ stopInterval(); alert('Odak süresi bitti!'); } updateTimerLabel(); },1000); });
-$('#foPause').addEventListener('click', stopInterval);
-$('#foReset').addEventListener('click', ()=>{ const t=tasks.find(x=>x.id===focusTaskId); if(t) setFocusDurationFromTask(t); });
-$('#foExit').addEventListener('click', ()=>{ stopInterval(); $('#focusOverlay').classList.add('hidden'); });
-$('#startTimer').addEventListener('click', ()=>{ if(timerInt) return; timerInt=setInterval(()=>{ timerSec--; if(timerSec<=0){ stopInterval(); } updateTimerLabel(); },1000); });
-$('#pauseTimer').addEventListener('click', stopInterval);
-$('#resetTimer').addEventListener('click', ()=>{ const t=tasks.find(x=>x.id===focusTaskId); if(t) setFocusDurationFromTask(t); else { timerSec=25*60; onBreak=false; updateTimerLabel(); }});
-updateTimerLabel();
-
-/* ---------- Team modal ---------- */
-$('#teamBtn').addEventListener('click', ()=>{ $('#teamModal').classList.remove('hidden'); paintTeam(); paintRolesUI(); });
-$('#closeTeam').addEventListener('click', ()=> $('#teamModal').classList.add('hidden'));
-$('#addMember').addEventListener('click', ()=>{
-  const name=$('#memberName').value.trim(); if(!name) return;
-  const role=$('#memberRole').value;
-  users.push({id:'u_'+Date.now().toString(36), name, role, color:randColor()});
-  save(KEY_USERS,users); $('#memberName').value=''; paintTeam(); fillAssigneeSelects(); render();
-});
-function roleText(r){ return r==='owner'?'Kurucu':(r==='manager'?'Yönetici':(r==='member'?'Üye':r)); }
-function countOwners(){ return users.filter(u=>u.role==='owner').length; }
-function paintTeam(){
-  // rol seçenekleri
-  const roleSel=$('#memberRole'); roleSel.innerHTML='';
-  [...BASE_ROLES, ...customRoles.map(r=>r.name)].forEach(r=>{ const o=document.createElement('option'); o.value=r; o.textContent=roleText(r); if(r==='manager') o.selected=true; roleSel.appendChild(o); });
-
-  const mgr=$('#mgrList'), mem=$('#memList'); mgr.innerHTML=''; mem.innerHTML='';
-  const mg=users.filter(u=>u.role==='owner'||u.role==='manager'), me=users.filter(u=>u.role!=='owner'&&u.role!=='manager');
-  function row(u){
-    const wrap=document.createElement('div'); wrap.className='flex items-center justify-between border rounded-xl px-3 py-2';
-    const left=document.createElement('div'); left.className='flex items-center gap-2'; left.appendChild(avatarEl(u,22)); const nm=document.createElement('div'); nm.innerHTML=`<div class="font-medium">${u.name}</div><div class="text-xs text-gray-400">${roleText(u.role)}</div>`; left.appendChild(nm);
-    const right=document.createElement('div'); right.className='flex items-center gap-2';
-    const roleSel=document.createElement('select'); roleSel.className='border rounded-lg px-2 py-1 text-xs';
-    [...BASE_ROLES, ...customRoles.map(r=>r.name)].forEach(r=>{ const o=document.createElement('option'); o.value=r; o.textContent=roleText(r); if(u.role===r) o.selected=true; roleSel.appendChild(o); });
-    roleSel.onchange=()=>{ 
-      if(u.role==='owner' && countOwners()<=1 && roleSel.value!=='owner'){ alert('En az bir kurucu gerekir.'); roleSel.value='owner'; return; }
-      u.role=roleSel.value; save(KEY_USERS,users); paintTeam(); fillAssigneeSelects(); render();
-    };
-    const setBtn=document.createElement('button'); setBtn.className='px-2 py-1 rounded border text-xs'; setBtn.textContent='Ben yap'; setBtn.onclick=()=>{ currentUserId=u.id; alert('Aktif kullanıcı: '+u.name); render(); };
-    const del=document.createElement('button'); del.className='px-2 py-1 rounded border border-red-200 text-red-600 text-xs'; del.textContent='Sil';
-    del.onclick=()=>{ if(u.role==='owner' && countOwners()<=1){ alert('Son kurucuyu silemezsiniz.'); return; } users=users.filter(x=>x.id!==u.id); tasks.forEach(t=>{ t.assigneeIds=t.assigneeIds.filter(id=>id!==u.id); if(t.assigneeIds.length===0) t.assigneeIds=[currentUserId]; }); save(KEY_USERS,users); save(KEY,tasks); paintTeam(); fillAssigneeSelects(); render(); };
-    right.appendChild(roleSel); right.appendChild(setBtn); right.appendChild(del);
-    wrap.appendChild(left); wrap.appendChild(right); return wrap;
-  }
-  mg.forEach(u=> mgr.appendChild(row(u)));
-  me.forEach(u=> mem.appendChild(row(u)));
-}
-/* ---- Role UI ---- */
-function paintRolesUI(){
-  // owner/manager dışındakiler rol düzenleyemesin
-  $('#roleBox').open = false;
-  $('#roleBox').style.display = isAdmin()? 'block':'none';
-  if(!isAdmin()) return;
-  const list=$('#roleList'); list.innerHTML='';
-  if(customRoles.length===0){ list.innerHTML='<div class="text-gray-500 text-sm">Özel rol yok.</div>'; }
-  customRoles.forEach((r,i)=>{
-    const row=document.createElement('div'); row.className='flex items-center justify-between border rounded-xl px-3 py-2 mt-2';
-    row.innerHTML=`<div class="font-medium">${r.name}</div>`;
-    const right=document.createElement('div'); right.className='flex items-center gap-3 text-sm';
-    const v=document.createElement('label'); v.className='flex items-center gap-1'; v.innerHTML=`<input type="checkbox" ${r.viewAll?'checked':''}/> Tümünü gör`;
-    const a=document.createElement('label'); a.className='flex items-center gap-1'; a.innerHTML=`<input type="checkbox" ${r.assignAll?'checked':''}/> Herkese ata`;
-    v.querySelector('input').onchange=(e)=>{ r.viewAll=e.target.checked; save(KEY_ROLES,customRoles); render(); };
-    a.querySelector('input').onchange=(e)=>{ r.assignAll=e.target.checked; save(KEY_ROLES,customRoles); fillAssigneeSelects(); };
-    const del=document.createElement('button'); del.className='px-2 py-1 rounded border border-red-200 text-red-600 text-xs'; del.textContent='Sil';
-    del.onclick=()=>{ if(users.some(u=>u.role===r.name)){ alert('Bu rol kullanıcılarca kullanılıyor. Önce kullanıcıları başka role taşıyın.'); return; } customRoles.splice(i,1); save(KEY_ROLES,customRoles); paintRolesUI(); paintTeam(); fillAssigneeSelects(); };
-    right.appendChild(v); right.appendChild(a); right.appendChild(del); row.appendChild(right); list.appendChild(row);
-  });
-}
-$('#addRole').addEventListener('click', ()=>{
-  const name=$('#roleName').value.trim(); if(!name) return;
-  if(BASE_ROLES.includes(name)||customRoles.some(r=>r.name===name)){ alert('Bu rol adı zaten var.'); return; }
-  const r={name, viewAll:$('#roleViewAll').checked, assignAll:$('#roleAssignAll').checked};
-  customRoles.push(r); save(KEY_ROLES,customRoles); $('#roleName').value=''; $('#roleViewAll').checked=false; $('#roleAssignAll').checked=false;
-  paintRolesUI(); paintTeam(); fillAssigneeSelects(); render();
-});
-
-/* ---------- Templates ---------- */
-document.querySelector('#taskTpl').innerHTML=`
-  <div class="task soft-card rounded-2xl p-4 flex flex-col gap-3 fade-up border" draggable="true">
+<!-- TEMPLATES (Liste & Kanban kart) -->
+<template id="taskTpl">
+  <div class="task soft-card rounded-2xl p-4 flex flex-col gap-3 border" draggable="true">
     <div class="flex items-start justify-between gap-4">
       <div class="flex items-start gap-3 w-full">
         <input type="checkbox" class="sel mt-1 transform scale-110"/>
         <div class="w-full">
           <div class="flex items-center gap-2 flex-wrap">
-            <h3 class="ttl font-semibold cursor-text text-sm" contenteditable="true"></h3>
+            <h3 class="ttl font-semibold text-sm break-words"></h3>
             <span class="pill px-2 py-0.5 rounded-full text-xs"></span>
             <div class="tags flex flex-wrap gap-1"></div>
           </div>
-          <p class="desc text-sm text-gray-600 mt-0.5 cursor-text"></p>
+          <p class="desc text-sm text-gray-600 mt-0.5 break-words"></p>
           <div class="meta text-xs text-gray-400 mt-1"></div>
           <div class="flex items-center gap-1 mt-1 assignees"></div>
           <div class="estimate text-xs text-gray-500"></div>
+          <div class="text-xs text-gray-400">💬 <span class="cnum">0</span> yorum</div>
         </div>
       </div>
       <div class="flex flex-col items-end gap-2">
@@ -989,7 +392,7 @@ document.querySelector('#taskTpl').innerHTML=`
       </div>
     </div>
     <details class="subwrap">
-      <summary class="cursor-pointer text-sm text-gray-700">✅ Alt görevler</summary>
+      <summary class="cursor-pointer text-sm">✅ Alt görevler</summary>
       <div class="space-y-2 mt-2">
         <div class="subs space-y-1"></div>
         <div class="flex gap-2">
@@ -1001,17 +404,22 @@ document.querySelector('#taskTpl').innerHTML=`
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
         <input type="checkbox" class="chk transform scale-110"/>
-        <span class="text-sm text-gray-600">Tamamlandı</span>
+        <span class="text-sm">Tamamlandı</span>
       </div>
       <button class="btn btn-del text-xs px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50">Sil</button>
     </div>
-  </div>`;
-document.querySelector('#subTpl').innerHTML=`
-  <label class="flex items-center gap-2 text-sm">
-    <input type="checkbox" class="s-chk"/>
-    <span class="s-ttl"></span>
-  </label>`;
-document.querySelector('#kanbanCardTpl').innerHTML=`
+  </div>
+</template>
+<template id="subTpl">
+  <div class="flex items-center justify-between">
+    <label class="flex items-center gap-2 text-sm">
+      <input type="checkbox" class="s-chk"/>
+      <span class="s-ttl"></span>
+    </label>
+    <button class="s-del text-xs px-2 py-0.5 rounded border border-red-200 text-red-600">Sil</button>
+  </div>
+</template>
+<template id="kanbanCardTpl">
   <div draggable="true" class="kcard soft-card rounded-2xl p-3 cursor-move border">
     <div class="flex items-start justify-between gap-2">
       <div class="min-w-0">
@@ -1024,12 +432,529 @@ document.querySelector('#kanbanCardTpl').innerHTML=`
         <button class="k-edit btn text-[11px] px-2 py-0.5 rounded-lg border hover:bg-gray-50">Düzenle</button>
       </div>
     </div>
-  </div>`;
+  </div>
+</template>
 
-/* ---------- Init ---------- */
-buildWeek(selectedDate);
-fillAssigneeSelects();
-render();
+<script>
+/* ========== helpers ========== */
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const toLocalISODate = (d=new Date())=>{
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), da=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${da}`;
+};
+const toLocalTime = (d=new Date())=>{
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+};
+const todayISO = ()=> toLocalISODate(new Date());
+const fmtDate = d => d ? new Date(d+'T00:00').toLocaleDateString('tr-TR') : '—';
+// YENİ: Yazıyla uzun tarih (örn: Pazartesi, 20 Ağustos 2025)
+const fmtDateLong = d => d ? new Intl.DateTimeFormat('tr-TR', { weekday:'long', day:'numeric', month:'long', year:'numeric' }).format(new Date(d+'T00:00')) : '—';
+const clamp = (v,min,max)=> Math.max(min, Math.min(max,v));
+const randColor=()=>['#6366F1','#10B981','#F59E0B','#EF4444','#3B82F6','#8B5CF6','#14B8A6'][Math.floor(Math.random()*7)];
+
+/* ========== storage ========== */
+const KEY='nextotask_tasks_v14', KEY_USERS='nextotask_users_v3', KEY_ROLES='nextotask_roles_v1';
+function load(k,f){ try{ return JSON.parse(localStorage.getItem(k)||JSON.stringify(f)); }catch{ return f } }
+function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+
+let tasks=load(KEY,[]);
+let users=load(KEY_USERS,[]);
+let customRoles=load(KEY_ROLES,[]);
+if(users.length===0){ users=[{id:'u_me', name:'Ben', color:randColor(), role:'owner'}]; save(KEY_USERS,users); }
+tasks.forEach(t=>{ t.assigneeIds=t.assigneeIds||[users[0].id]; t.comments=t.comments||[]; });
+
+/* ========== theme & header ========== */
+const html = document.documentElement;
+if(localStorage.getItem('nx_dark')==='1') html.classList.add('dark');
+$('#darkToggle').addEventListener('click',()=>{ html.classList.toggle('dark'); localStorage.setItem('nx_dark', html.classList.contains('dark')?'1':'0'); });
+
+document.addEventListener('scroll', ()=> $('#hdr').classList.toggle('scrolled', window.scrollY>6));
+
+/* ========== sidebar toggle ========== */
+const sidebar=$('#sidebar');
+$('#brandBtn').onclick=()=> sidebar.classList.add('open');
+$('#closeSidebar').onclick=()=> sidebar.classList.remove('open');
+$$('.sidebar [data-route]').forEach(btn=>{
+  btn.onclick=()=>{
+    $$('.sidebar .item').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    routeTo(btn.dataset.route);
+    sidebar.classList.remove('open');
+  };
+});
+
+/* ========== görünüm sağ panel ========== */
+const viewSide=$('#viewSidebar');
+const viewTab=$('#viewTab');
+const setViewOpen = (open)=> viewSide.style.transform = open?'translateX(0)':'translateX(360px)';
+viewTab.onclick=()=> setViewOpen(viewSide.style.transform!=='translateX(0)');
+
+/* ========== state ========== */
+let selectedDate=todayISO();
+let mRef=new Date(); // mini calendar
+let bigRef=new Date(); // big calendar
+let route='home';
+let currentView='list';
+let selectedIds=new Set();
+let editingId=null;
+let currentUserId=users[0].id;
+
+/* ========== roles / visibility ========== */
+const BASE_ROLES=['owner','manager','member'];
+const userById=id=>users.find(u=>u.id===id)||null;
+function roleCfg(role){
+  if(role==='owner'||role==='manager') return {viewAll:true, assignAll:true};
+  if(role==='member') return {viewAll:false, assignAll:false};
+  const r=customRoles.find(x=>x.name===role); return r ? {viewAll:!!r.viewAll, assignAll:!!r.assignAll}:{viewAll:false, assignAll:false};
+}
+const canAssignAll=()=> roleCfg(userById(currentUserId)?.role||'member').assignAll;
+function visibilityFilter(arr){ const cfg=roleCfg(userById(currentUserId)?.role||'member'); return cfg.viewAll? arr : arr.filter(t=>(t.assigneeIds||[]).includes(currentUserId)); }
+
+/* ========== assignee UI (chips + dropdown) ========== */
+function avatar(u,size=20){ const el=document.createElement('span'); el.className='rounded-full grid place-items-center text-white font-semibold'; el.style.width=size+'px'; el.style.height=size+'px'; el.style.background=u.color||'#999'; el.textContent=(u.name||'?').slice(0,1).toUpperCase(); return el; }
+function paintChipbox(box, ids){
+  box.innerHTML='';
+  if(ids.length===0){ const ph=document.createElement('span'); ph.className='text-gray-400 text-sm'; ph.textContent='Kişi ekleyin…'; box.appendChild(ph); return; }
+  ids.forEach(id=>{ const u=userById(id); if(!u) return; const chip=document.createElement('span'); chip.className='chip'; chip.appendChild(avatar(u,16)); chip.appendChild(document.createTextNode(u.name)); box.appendChild(chip); });
+}
+function openAssigneeMenu(anchor, selectedIdsArr, onChange){
+  const menu=document.createElement('div'); menu.id='assMenuTmp'; menu.className='assignee-menu';
+  const rect=anchor.getBoundingClientRect();
+  menu.style.left = Math.min(rect.left, window.innerWidth-270)+'px';
+  menu.style.top  = (rect.bottom+6)+'px';
+  // roles
+  const roles=[...new Set(users.map(u=>u.role))];
+  if(roles.length){
+    const h=document.createElement('div'); h.className='px-2 py-1 text-[12px] text-gray-400'; h.textContent='— Ekipler —'; menu.appendChild(h);
+    roles.forEach(r=>{
+      const row=document.createElement('label'); row.className='flex items-center justify-between px-2 py-1 rounded hover:bg-gray-50 cursor-pointer';
+      const name=(r==='owner'?'Kurucu':(r==='manager'?'Yönetici':(r==='member'?'Üye':r)));
+      row.innerHTML=`<div>${name}</div>`;
+      const cb=document.createElement('input'); cb.type='checkbox';
+      const members=users.filter(u=>u.role===r).map(u=>u.id);
+      cb.checked = members.every(id=>selectedIdsArr.includes(id));
+      cb.onchange=()=>{ members.forEach(id=>{ const i=selectedIdsArr.indexOf(id); if(cb.checked && i===-1) selectedIdsArr.push(id); if(!cb.checked && i!==-1) selectedIdsArr.splice(i,1); }); onChange([...selectedIdsArr]); };
+      row.appendChild(cb); menu.appendChild(row);
+    });
+  }
+  // users
+  const hk=document.createElement('div'); hk.className='px-2 py-1 text-[12px] text-gray-400'; hk.textContent='— Kişiler —'; menu.appendChild(hk);
+  users.forEach(u=>{
+    const row=document.createElement('label'); row.className='flex items-center justify-between px-2 py-1 rounded hover:bg-gray-50 cursor-pointer';
+    const left=document.createElement('div'); left.className='flex items-center gap-2'; left.appendChild(avatar(u,18)); left.appendChild(document.createTextNode(u.name)); row.appendChild(left);
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=selectedIdsArr.includes(u.id);
+    cb.onchange=()=>{ const i=selectedIdsArr.indexOf(u.id); if(cb.checked && i===-1) selectedIdsArr.push(u.id); if(!cb.checked && i!==-1) selectedIdsArr.splice(i,1); onChange([...selectedIdsArr]); };
+    row.appendChild(cb); menu.appendChild(row);
+  });
+  document.body.appendChild(menu);
+  const closer=(e)=>{ if(!menu.contains(e.target) && e.target!==anchor){ menu.remove(); document.removeEventListener('mousedown',closer,true); } };
+  setTimeout(()=> document.addEventListener('mousedown', closer, true), 0);
+}
+
+/* ========== view filters ========== */
+let currentFilter='pending', searchTerm='', sortMode='created_desc', assigneeFilter='all';
+$('#search').addEventListener('input', e=>{ searchTerm=e.target.value.toLowerCase(); render(); });
+$('#filter').addEventListener('change', e=>{ currentFilter=e.target.value; render(); });
+$('#sort').addEventListener('change', e=>{ sortMode=e.target.value; render(); });
+$('#assigneeFilter').addEventListener('change', e=>{ assigneeFilter=e.target.value; render(); });
+
+/* ========== route handling ========== */
+function routeTo(r){
+  route=r; ['home','tasks','calendar','daily','team','reports','templates','settings'].forEach(id=>{
+    $('#route-'+id).classList.toggle('hidden', id!==r);
+  });
+  if(r==='home') { buildMini(); paintMiniDayTasks(); }
+  if(r==='tasks') { render(); }
+  if(r==='calendar') { buildBig(); }
+  window.scrollTo({top:0});
+}
+
+/* ========== mini calendar (GENEL) ========== */
+function monthTitle(d){ return d.toLocaleDateString('tr-TR',{month:'long', year:'numeric'}); }
+function buildMini(){
+  $('#mTitle').textContent=monthTitle(mRef);
+  const g=$('#miniCal'); g.innerHTML='';
+  const first=new Date(mRef.getFullYear(), mRef.getMonth(), 1);
+  const start=(first.getDay()+6)%7;
+  const daysInMonth=new Date(mRef.getFullYear(), mRef.getMonth()+1,0).getDate();
+  const cells=[]; for(let i=0;i<start;i++) cells.push(null); for(let d=1; d<=daysInMonth; d++) cells.push(new Date(mRef.getFullYear(), mRef.getMonth(), d));
+  const countBy={}; tasks.forEach(t=>{ const dd=(t.dueDate||'').slice(0,10); if(!dd) return; countBy[dd]=(countBy[dd]||0)+1; });
+  cells.forEach(c=>{
+    const cell=document.createElement('div'); cell.className='cal-cell';
+    if(!c){ cell.style.visibility='hidden'; g.appendChild(cell); return; }
+    const iso=toLocalISODate(c);
+    const day=document.createElement('div'); day.className='cal-day'; day.textContent=c.getDate(); cell.appendChild(day);
+    const cnt=countBy[iso]||0; if(cnt){ const b=document.createElement('div'); b.className='badge'; b.textContent=cnt+' görev'; cell.appendChild(b); }
+    if(iso===selectedDate) cell.classList.add('sel');
+    if(iso===todayISO()) cell.classList.add('today');
+    cell.addEventListener('click',()=>{ selectedDate=iso; buildMini(); paintMiniDayTasks(); });
+    cell.addEventListener('dragover', e=>{ e.preventDefault(); cell.classList.add('drag-over'); });
+    cell.addEventListener('dragleave', ()=> cell.classList.remove('drag-over'));
+    cell.addEventListener('drop', e=>{
+      e.preventDefault(); cell.classList.remove('drag-over');
+      const id=e.dataTransfer.getData('text/plain'); const t=tasks.find(x=>x.id===id); if(t){ t.dueDate=iso; save(KEY,tasks); buildMini(); paintMiniDayTasks(); render(); }
+    });
+    g.appendChild(cell);
+  });
+}
+$('#mPrev').onclick=()=>{ mRef.setMonth(mRef.getMonth()-1); buildMini(); };
+$('#mNext').onclick=()=>{ mRef.setMonth(mRef.getMonth()+1); buildMini(); };
+
+function paintMiniDayTasks(){
+  const wrap=$('#miniDayTasks'); wrap.innerHTML='';
+  const dayTasks=visibilityFilter(tasks).filter(t=> (t.dueDate||'').slice(0,10)===selectedDate );
+  if(dayTasks.length===0){ wrap.innerHTML='<div class="text-gray-400">Görev yok.</div>'; return; }
+  dayTasks.forEach(t=>{
+    const row=document.createElement('div'); row.className='soft-card rounded-xl px-3 py-2 flex items-center justify-between';
+    row.innerHTML=`<div class="text-sm">${t.title}</div><div class="text-xs text-gray-400">${t.dueTime||'-'} • ${t.estimate||0} dk</div>`;
+    wrap.appendChild(row);
+  });
+}
+
+/* ========== list & kanban render ========== */
+function applyFilter(arr){
+  let out=visibilityFilter(arr).filter(t=> (t.title+' '+t.description+' '+(t.labels||[]).join(' ')).toLowerCase().includes(searchTerm));
+  const today=todayISO();
+  if(assigneeFilter!=='all') out=out.filter(t=> (t.assigneeIds||[]).includes(assigneeFilter));
+  if(currentFilter==='date') out=out.filter(t=> (t.dueDate||'').slice(0,10)===selectedDate);
+  if(currentFilter==='today') out=out.filter(t=> (t.dueDate||'').slice(0,10)===today && t.status!=='DONE');
+  if(currentFilter==='upcoming') out=out.filter(t=>t.status!=='DONE' && t.dueDate && (Date.parse(t.dueDate)-Date.now())<=7*86400000 && (t.dueDate>=today));
+  if(currentFilter==='overdue') out=out.filter(t=>t.status!=='DONE' && t.dueDate && t.dueDate<today);
+  if(currentFilter==='pending') out=out.filter(t=>t.status!=='DONE');
+  if(currentFilter==='done') out=out.filter(t=>t.status==='DONE');
+  return out;
+}
+function applySort(out){
+  out=out.slice();
+  if(sortMode==='created_desc') out.sort((a,b)=> Date.parse(b.createdAt)-Date.parse(a.createdAt));
+  if(sortMode==='created_asc') out.sort((a,b)=> Date.parse(a.createdAt)-Date.parse(b.createdAt));
+  if(sortMode==='due_asc') out.sort((a,b)=> (Date.parse(a.dueDate||'9999-12-31') - Date.parse(b.dueDate||'9999-12-31')));
+  if(sortMode==='due_desc') out.sort((a,b)=> (Date.parse(b.dueDate||'0001-01-01') - Date.parse(a.dueDate||'0001-01-01')));
+  if(sortMode==='priority_desc'){ const p={HIGH:2,NORMAL:1,LOW:0}; out.sort((a,b)=> p[b.priority]-p[a.priority]); }
+  return out;
+}
+
+function render(){
+  // assignee filter options
+  const f=$('#assigneeFilter'); f.innerHTML='<option value="all">Atanan: Tümü</option>'; users.forEach(u=>{ const o=document.createElement('option'); o.value=u.id; o.textContent=u.name; f.appendChild(o); });
+
+  const visible=visibilityFilter(tasks);
+  const total=visible.length, done=visible.filter(t=>t.status==='DONE').length;
+  const estPending=visible.filter(t=>t.status!=='DONE').reduce((s,t)=>s+(t.estimate||0),0);
+  const estDone=visible.filter(t=>t.status==='DONE').reduce((s,t)=>s+(t.estimate||0),0);
+  $('#stats').textContent=`Toplam: ${total} • Bekleyen: ${total-done} • Tamamlanan: ${done} • Tahmin Bekleyen: ${estPending} dk • Tam: ${estDone} dk`;
+  $('#viewName').textContent=currentView==='list'?'Liste':'Kanban';
+
+  if(route==='tasks'){
+    if(currentView==='list'){ $('#listView').classList.remove('hidden'); $('#kanbanView').classList.add('hidden'); renderList(); }
+    else { $('#listView').classList.add('hidden'); $('#kanbanView').classList.remove('hidden'); renderKanban(); }
+  }
+}
+
+document.querySelector('#taskTpl'); // ensure templates loaded
+function renderList(){
+  const list=$('#listView'); list.innerHTML='';
+  selectedIds.forEach(id=>{ if(!tasks.find(t=>t.id===id)) selectedIds.delete(id); });
+  const tpl=$('#taskTpl'), subTpl=$('#subTpl');
+  const arr=applySort(applyFilter(tasks));
+  if(!arr.length){ const empty=document.createElement('div'); empty.className='soft-card rounded-2xl p-6 text-center text-gray-500'; empty.textContent='Görev yok. Üstten ekleyin veya filtreyi değiştirin.'; list.appendChild(empty); return; }
+  arr.forEach(t=>{
+    const node=tpl.content.cloneNode(true);
+    const root=node.querySelector('.task'); root.dataset.id=t.id;
+    root.classList.toggle('selected', selectedIds.has(t.id));
+    root.addEventListener('click', (e)=>{ if(e.target.closest('button,input,textarea,select,summary')) return; toggleSelect(t.id, root); });
+    root.addEventListener('dblclick', ()=> openEdit(t));
+    root.addEventListener('dragstart',ev=>{ ev.dataTransfer.effectAllowed='move'; ev.dataTransfer.setData('text/plain', t.id); });
+
+    node.querySelector('.ttl').textContent=t.title;
+    node.querySelector('.desc').textContent=t.description||'';
+    node.querySelector('.cnum').textContent=t.comments?.length||0;
+    const pill=node.querySelector('.pill'); let pillText='Normal', pillCls='bg-gray-100 text-gray-700'; if(t.priority==='HIGH'){ pillText='Yüksek'; pillCls='bg-red-100 text-red-700' } if(t.priority==='LOW'){ pillText='Düşük'; pillCls='bg-yellow-100 text-yellow-700' } pill.textContent=pillText; pill.className=`pill px-2 py-0.5 rounded-full text-xs ${pillCls}`;
+    // YENİ: uzun yazıyla tarih
+    node.querySelector('.meta').textContent=`Tarih: ${fmtDateLong(t.dueDate)} ${t.dueTime?('• '+t.dueTime):''} • Oluşturma: ${new Date(t.createdAt).toLocaleString('tr-TR')}`;
+    const tags=node.querySelector('.tags'); tags.innerHTML=''; (t.labels||[]).forEach(l=>{ const s=document.createElement('span'); s.className='px-2 py-0.5 rounded-full text-xs bg-green-50 text-green-700 border border-green-100'; s.textContent='#'+l; tags.appendChild(s); });
+    const aWrap=node.querySelector('.assignees'); aWrap.innerHTML=''; (t.assigneeIds||[]).forEach(id=> aWrap.appendChild(avatar(userById(id)||users[0])) );
+    node.querySelector('.estimate').textContent=t.estimate?`• ${t.estimate} dk`:'';
+
+    const chk=node.querySelector('.chk'); chk.checked=t.status==='DONE';
+    chk.addEventListener('change', ()=>{ t.status=chk.checked?'DONE':'TODO'; save(KEY,tasks); render(); });
+
+    const subsWrap=node.querySelector('.subs');
+    function paintSubs(){ subsWrap.innerHTML=''; (t.subtasks||[]).forEach((s,idx)=>{ const sn=subTpl.content.cloneNode(true); const c=sn.querySelector('.s-chk'); const st=sn.querySelector('.s-ttl'); c.checked=!!s.done; st.textContent=s.title; if(s.done) st.classList.add('line-through','text-gray-400'); c.addEventListener('change', ()=>{ s.done=c.checked; save(KEY,tasks); }); sn.querySelector('.s-del').addEventListener('click',()=>{ t.subtasks.splice(idx,1); save(KEY,tasks); paintSubs(); render(); }); subsWrap.appendChild(sn); }); }
+    paintSubs();
+    const subInput=node.querySelector('.sub-input'); node.querySelector('.sub-add').addEventListener('click', ()=> addSubtask(t, subInput, paintSubs)); subInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addSubtask(t, subInput, paintSubs); }});
+
+    node.querySelector('.btn-del').addEventListener('click', ()=>{ tasks=tasks.filter(x=>x.id!==t.id); save(KEY,tasks); render(); buildMini(); buildBig(); });
+    node.querySelector('.btn-edit').addEventListener('click', ()=> openEdit(t));
+    node.querySelector('.btn-focus').addEventListener('click', ()=> openFocus(t));
+    const sel=node.querySelector('.sel'); sel.checked=selectedIds.has(t.id); sel.addEventListener('change', ()=>{ sel.checked?selectedIds.add(t.id):selectedIds.delete(t.id); root.classList.toggle('selected', sel.checked); });
+    list.appendChild(node);
+  });
+}
+function addSubtask(t, input, repaint){ const val=input.value.trim(); if(!val) return; t.subtasks=t.subtasks||[]; t.subtasks.push({ title:val, done:false }); input.value=''; save(KEY,tasks); repaint(); }
+
+/* kanban */
+function renderKanban(){
+  ['BACKLOG','TODO','DOING','DONE'].forEach(st=>{
+    const col=$('#col-'+st); col.innerHTML=''; makeDroppable(col, (taskId,beforeId)=> moveTask(taskId, st, beforeId));
+    const cards=applyFilter(tasks.filter(t=>t.status===st));
+    cards.forEach(t=>{
+      const node=$('#kanbanCardTpl').content.cloneNode(true);
+      const card=node.querySelector('.kcard'); card.dataset.id=t.id;
+      node.querySelector('.k-ttl').textContent=t.title;
+      // YENİ: uzun yazıyla tarih kanbanda
+      node.querySelector('.k-meta').textContent=`${t.labels?.map(l=>'#'+l).join(' ')||''} • ${fmtDateLong(t.dueDate)} ${t.dueTime?('• '+t.dueTime):''} • ${t.estimate? t.estimate+' dk':''}`;
+      const as=node.querySelector('.k-assignees'); as.innerHTML=''; (t.assigneeIds||[]).forEach(id=> as.appendChild(avatar(userById(id)||users[0])) );
+      card.addEventListener('click', (e)=>{ if(e.target.closest('button,input')) return; toggleSelect(t.id, card); });
+      card.addEventListener('dblclick', ()=> openEdit(t));
+      card.addEventListener('dragstart', ev=>{ ev.dataTransfer.setData('text/plain', t.id); setTimeout(()=>card.classList.add('opacity-50'),0); });
+      card.addEventListener('dragend', ()=> card.classList.remove('opacity-50'));
+      node.querySelector('.k-sub').addEventListener('click', ()=>{ const val=prompt('Alt görev başlığı:'); if(!val) return; t.subtasks=t.subtasks||[]; t.subtasks.push({title:val,done:false}); save(KEY,tasks); render(); });
+      node.querySelector('.k-edit').addEventListener('click', ()=> openEdit(t));
+      col.appendChild(node);
+    });
+    const emptyEl=document.querySelector(`[data-empty="${st}"]`); if(emptyEl) emptyEl.hidden=cards.length!==0;
+  });
+}
+function makeDroppable(el, onDrop){
+  el.addEventListener('dragover', ev=>{ ev.preventDefault(); ev.dataTransfer.dropEffect='move'; el.classList.add('drag-over'); }, true);
+  el.addEventListener('dragleave', ()=> el.classList.remove('drag-over'), true);
+  el.addEventListener('drop', ev=>{
+    ev.preventDefault(); el.classList.remove('drag-over');
+    const id=ev.dataTransfer.getData('text/plain');
+    const beforeCard=ev.target.closest('.kcard'); const beforeId=beforeCard? beforeCard.dataset.id:null;
+    if(id) onDrop(id, beforeId);
+  }, true);
+}
+function moveTask(id,newStatus,beforeId){
+  const t=tasks.find(x=>x.id===id); if(!t) return;
+  const fromIndex=tasks.indexOf(t); tasks.splice(fromIndex,1); t.status=newStatus;
+  if(beforeId){ const idx=tasks.findIndex(x=>x.id===beforeId); tasks.splice(idx>=0?idx:tasks.length,0,t); }
+  else tasks.push(t);
+  save(KEY,tasks); render(); buildMini(); buildBig();
+}
+
+/* ========== big month calendar (TAKVİM) ========== */
+function buildBig(){
+  $('#bigTitle').textContent=monthTitle(bigRef);
+  const grid=$('#bigGrid'); grid.innerHTML='';
+  const first=new Date(bigRef.getFullYear(), bigRef.getMonth(), 1);
+  const start=(first.getDay()+6)%7;
+  const daysInMonth=new Date(bigRef.getFullYear(), bigRef.getMonth()+1,0).getDate();
+  const cells=[]; for(let i=0;i<start;i++) cells.push(null); for(let d=1; d<=daysInMonth; d++) cells.push(new Date(bigRef.getFullYear(), bigRef.getMonth(), d));
+  const countBy={}; tasks.forEach(t=>{ const dd=(t.dueDate||'').slice(0,10); if(!dd) return; countBy[dd]=(countBy[dd]||0)+1; });
+  cells.forEach(c=>{
+    const cell=document.createElement('div'); cell.className='cal-cell';
+    if(!c){ cell.style.visibility='hidden'; grid.appendChild(cell); return; }
+    const iso=toLocalISODate(c);
+    const day=document.createElement('div'); day.className='cal-day'; day.textContent=c.getDate(); cell.appendChild(day);
+    const cnt=countBy[iso]||0; if(cnt){ const b=document.createElement('div'); b.className='badge'; b.textContent=cnt+' görev'; cell.appendChild(b); }
+    if(iso===todayISO()) cell.classList.add('today');
+    if(iso===selectedDate) cell.classList.add('sel');
+    cell.ondblclick=()=> openWeekForDay(iso);
+    grid.appendChild(cell);
+  });
+}
+$('#bigPrev').onclick=()=>{ bigRef.setMonth(bigRef.getMonth()-1); buildBig(); };
+$('#bigNext').onclick=()=>{ bigRef.setMonth(bigRef.getMonth()+1); buildBig(); };
+$('#calMonthBtn').onclick=()=>{ $('#bigMonth').classList.remove('hidden'); $('#weekWrap').classList.add('hidden'); };
+$('#calWeekBtn').onclick=()=> openWeekForDay(selectedDate);
+$('#calTodayBtn').onclick=()=>{ selectedDate=todayISO(); bigRef=new Date(); buildBig(); };
+
+/* week view (saatlik) */
+function openWeekForDay(dayISO){
+  selectedDate=dayISO;
+  const baseDate=new Date(dayISO+'T00:00');
+  const monday=new Date(baseDate); const day=(baseDate.getDay()+6)%7; monday.setDate(baseDate.getDate()-day);
+  const grid=$('#weekGrid'); grid.innerHTML='';
+  // hours rows
+  for(let h=0; h<24; h++){
+    const row=document.createElement('div'); row.className='hour-row';
+    const lbl=document.createElement('div'); lbl.className='hour-label'; lbl.textContent=String(h).padStart(2,'0')+':00'; row.appendChild(lbl);
+    for(let d=0; d<7; d++){
+      const cell=document.createElement('div'); cell.className='hour-cell'; cell.dataset.day=d; cell.dataset.hour=h;
+      // create on drag
+      let creating=false, startY=0, ghost=null;
+      cell.addEventListener('mousedown', (e)=>{
+        if(e.button!==0) return;
+        creating=true; startY=e.offsetY; ghost=document.createElement('div'); ghost.className='event'; ghost.style.top=(e.offsetY)+'px'; ghost.style.height='22px'; ghost.textContent='Yeni'; cell.appendChild(ghost);
+      });
+      cell.addEventListener('mousemove', (e)=>{
+        if(!creating||!ghost) return;
+        const top=Math.min(startY, e.offsetY), bottom=Math.max(startY, e.offsetY);
+        ghost.style.top=top+'px'; ghost.style.height=Math.max(22,bottom-top)+'px';
+      });
+      window.addEventListener('mouseup', ()=>{ if(!creating||!ghost) return; creating=false; const rect=cell.getBoundingClientRect(); const top=parseInt(ghost.style.top); const h1 = clamp(h + top/44, 0, 24); const dur=Math.max(0.5, parseInt(ghost.style.height)/44); ghost.remove(); // create task
+        const dayDate=new Date(monday); dayDate.setDate(monday.getDate()+d);
+        const dateISO=toLocalISODate(dayDate);
+        const startMin=Math.round((h1%1)*60); const hour=Math.floor(h1);
+        const dueTime=String(hour).padStart(2,'0')+':'+String(startMin).padStart(2,'0');
+        const minutes=Math.round(dur*60);
+        createTask({ title:'Yeni', due:dateISO, time:dueTime, estimate:minutes, priority:'NORMAL', repeat:'none', assignees:[currentUserId], labels:[], desc:'' });
+        render(); buildMini(); buildBig(); openWeekForDay(dateISO);
+      }, {once:true});
+      row.appendChild(cell);
+    }
+    grid.appendChild(row);
+  }
+  // place events
+  const weekTasks=applyFilter(tasks).filter(t=>{
+    const td=new Date(t.dueDate+'T00:00'); return td>=monday && td<new Date(monday.getTime()+7*86400000);
+  });
+  weekTasks.forEach(t=>{
+    const td=new Date(t.dueDate+'T00:00'); const d=(td.getDay()+6)%7;
+    const h=parseInt((t.dueTime||'08:00').split(':')[0]||'8'); const m=parseInt((t.dueTime||'08:00').split(':')[1]||'0');
+    const dur=(t.estimate||60)/60;
+    const row=grid.querySelector(`.hour-row:nth-child(${h+1}) .hour-cell[data-day="${d}"]`);
+    if(!row) return;
+    const ev=document.createElement('div'); ev.className='event'; ev.style.top=(m/60*44)+'px'; ev.style.height=(Math.max(.5,dur)*44)+'px'; ev.textContent=t.title; ev.title=(t.dueTime||'')+' • '+(t.estimate||0)+'dk';
+    // drag move
+    let start=null, startTop=0;
+    ev.addEventListener('mousedown', e=>{ if(e.target.classList.contains('resize-handle')) return; start=e.clientY; startTop=parseInt(ev.style.top||'0'); document.body.style.userSelect='none'; });
+    window.addEventListener('mousemove', e=>{ if(start===null) return; const dy=e.clientY-start; ev.style.top=clamp(startTop+dy,0,44-10)+'px'; });
+    window.addEventListener('mouseup', e=>{ if(start===null) return; const top=parseInt(ev.style.top||'0'); const newMin=Math.round(top/44*60); t.dueTime=String(h).padStart(2,'0')+':'+String(newMin).padStart(2,'0'); save(KEY,tasks); document.body.style.userSelect=''; start=null; });
+    // resize
+    const rt=document.createElement('div'); rt.className='resize-handle resize-top'; ev.appendChild(rt);
+    const rb=document.createElement('div'); rb.className='resize-handle resize-bottom'; ev.appendChild(rb);
+    let resizing=null, rStart=0, rHeight=0;
+    rt.onmousedown=(e)=>{ resizing='top'; rStart=e.clientY; rHeight=parseInt(ev.style.height); startTop=parseInt(ev.style.top); document.body.style.userSelect='none'; };
+    rb.onmousedown=(e)=>{ resizing='bottom'; rStart=e.clientY; rHeight=parseInt(ev.style.height); startTop=parseInt(ev.style.top); document.body.style.userSelect='none'; };
+    window.addEventListener('mousemove', e=>{
+      if(!resizing) return;
+      const dy=e.clientY-rStart;
+      if(resizing==='bottom'){ ev.style.height=Math.max(22, rHeight+dy)+'px'; }
+      if(resizing==='top'){ const newTop=clamp(startTop+dy,0,44-10); ev.style.top=newTop+'px'; ev.style.height=Math.max(22, rHeight-(newTop-startTop))+'px'; }
+    });
+    window.addEventListener('mouseup', ()=>{
+      if(!resizing) return;
+      const mins=Math.round(parseInt(ev.style.height)/44*60); t.estimate=mins; save(KEY,tasks); document.body.style.userSelect=''; resizing=null;
+    });
+
+    row.appendChild(ev);
+  });
+
+  $('#bigMonth').classList.add('hidden');
+  $('#weekWrap').classList.remove('hidden');
+}
+
+/* ========== selection helper ========== */
+function toggleSelect(id, el){ if(selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id); if(el) el.classList.toggle('selected'); }
+
+/* ========== create/edit helpers ========== */
+function createTask(p){
+  const d = p.due || todayISO();
+  const time = p.time || toLocalTime(new Date());
+  const t={ id:'t_'+Date.now().toString(36),
+    title:p.title, description:p.desc||'', labels:p.labels||[], priority:p.priority||'NORMAL',
+    dueDate:d, dueTime:time, estimate:p.estimate||0, repeat:p.repeat||'none',
+    assigneeIds:(p.assignees&&p.assignees.length?p.assignees:[currentUserId]), status:'TODO', subtasks:[], comments:[], activity:[], createdAt:new Date().toISOString()
+  };
+  tasks.unshift(t); save(KEY,tasks);
+}
+
+/* ========== New Task Modal ========== */
+const cBox=$('#c_chipbox'), cMenu=$('#c_menu');
+let cAssignees=[currentUserId];
+function paintCreateChips(){ paintChipbox(cBox, cAssignees); }
+cBox.onclick=(e)=>{ const sel=[...cAssignees]; openAssigneeMenu(cBox, sel, (ids)=>{ cAssignees=ids; paintCreateChips(); }); };
+const cDueHuman = document.getElementById('c_due_human');
+$('#newTaskBtn').onclick=()=>{
+  $('#createForm').reset();
+  $('#c_due').value=todayISO();
+  $('#c_time').value=toLocalTime(new Date());
+  $('#c_priority').value='NORMAL';
+  cAssignees=[currentUserId]; paintCreateChips();
+  if (cDueHuman) cDueHuman.textContent = fmtDateLong($('#c_due').value);
+  open('createModal');
+};
+$('#closeCreate').onclick=()=> close('createModal');
+$('#c_due').addEventListener('input', ()=>{ if (cDueHuman) cDueHuman.textContent = fmtDateLong($('#c_due').value); });
+$('#createForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  createTask({
+    title:$('#c_title').value.trim(), labels:($('#c_labels').value||'').split(',').map(s=>s.trim()).filter(Boolean),
+    priority:$('#c_priority').value, due:$('#c_due').value||todayISO(), time:$('#c_time').value||toLocalTime(new Date()),
+    estimate:parseInt($('#c_estimate').value||'0',10)||0, repeat:$('#c_repeat').value||'none',
+    assignees:[...cAssignees], desc:$('#c_desc').value||''
+  });
+  close('createModal'); render(); buildMini(); buildBig();
+});
+
+/* ========== Edit Modal ========== */
+const eBox=$('#e_chipbox');
+let eAssignees=[];
+function paintEditChips(){ paintChipbox(eBox, eAssignees); }
+function openEdit(t){
+  editingId=t.id;
+  $('#e_title').value=t.title; $('#e_desc').value=t.description||''; $('#e_labels').value=(t.labels||[]).join(', ');
+  $('#e_priority').value=t.priority; $('#e_due').value=t.dueDate||todayISO(); $('#e_time').value=t.dueTime||toLocalTime(new Date()); $('#e_est').value=t.estimate||0; $('#e_repeat').value=t.repeat||'none';
+  eAssignees=[...(t.assigneeIds||[])]; paintEditChips(); paintComments(t);
+  // YENİ: düzenle modalında yazıyla tarih
+  $('#e_due_human').textContent = fmtDateLong($('#e_due').value);
+  $('#e_due').oninput = () => { $('#e_due_human').textContent = fmtDateLong($('#e_due').value); };
+  $('#e_delete').onclick=()=>{ tasks=tasks.filter(x=>x.id!==t.id); save(KEY,tasks); close('editModal'); render(); buildMini(); buildBig(); };
+  open('editModal');
+}
+eBox.onclick=()=>{ const sel=[...eAssignees]; openAssigneeMenu(eBox, sel, (ids)=>{ eAssignees=ids; paintEditChips(); }); };
+$('#closeEdit').onclick=()=> close('editModal');
+$('#editForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const t=tasks.find(x=>x.id===editingId); if(!t) return;
+  t.title=$('#e_title').value.trim()||t.title; t.description=$('#e_desc').value||'';
+  t.labels=($('#e_labels').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  t.priority=$('#e_priority').value; t.dueDate=$('#e_due').value||todayISO(); t.dueTime=$('#e_time').value||toLocalTime(new Date()); t.estimate=parseInt($('#e_est').value||'0',10)||0; t.repeat=$('#e_repeat').value||'none';
+  if(eAssignees.length) t.assigneeIds=[...eAssignees];
+  save(KEY,tasks); close('editModal'); render(); buildMini(); buildBig();
+});
+
+/* comments (edit) */
+function paintComments(t){
+  const L=$('#cList'); L.innerHTML=''; const cc=t.comments||[]; $('#cCount').textContent=cc.length+' yorum';
+  cc.forEach((c,i)=>{ const row=document.createElement('div'); row.className='flex items-start justify-between gap-2 rounded-xl border px-3 py-2';
+    row.innerHTML=`<div><div class="text-sm">${c.text}</div><div class="text-xs text-gray-400">${new Date(c.at).toLocaleString('tr-TR')}</div></div>`;
+    const del=document.createElement('button'); del.className='text-xs px-2 py-1 rounded border border-red-200 text-red-600'; del.textContent='Sil';
+    del.onclick=()=>{ t.comments.splice(i,1); save(KEY,tasks); paintComments(t); render(); };
+    row.appendChild(del); L.appendChild(row);
+  });
+}
+$('#cAdd').onclick=addCommentFromBox;
+$('#cInput').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addCommentFromBox(); }});
+function addCommentFromBox(){
+  const t=tasks.find(x=>x.id===editingId); if(!t) return;
+  const v=$('#cInput').value.trim(); if(!v) return; t.comments=t.comments||[]; t.comments.unshift({ by:currentUserId, at:new Date().toISOString(), text:v });
+  $('#cInput').value=''; save(KEY,tasks); paintComments(t); render();
+}
+
+/* ========== focus timer ========== */
+let focusTaskId=null, timerSec=25*60, timerInt=null;
+function updateTimer(){ const m=String(Math.floor(timerSec/60)).padStart(2,'0'), s=String(timerSec%60).padStart(2,'0'); $('#timer').textContent=`${m}:${s}`; }
+function setFocusFromTask(t){ const base=t.estimate&&t.estimate>0 ? t.estimate : 25; const minutes=Math.max(5, base-5); timerSec=minutes*60; updateTimer(); }
+function openFocus(t){ focusTaskId=t.id; $('#focusTask').textContent='Odak: '+t.title; setFocusFromTask(t); }
+function stopInt(){ if(timerInt){ clearInterval(timerInt); timerInt=null; } }
+$('#startTimer').onclick=()=>{ if(timerInt) return; timerInt=setInterval(()=>{ timerSec--; if(timerSec<=0){ stopInt(); alert('Odak süresi bitti!'); } updateTimer(); },1000); };
+$('#pauseTimer').onclick=stopInt;
+$('#resetTimer').onclick=()=>{ const t=tasks.find(x=>x.id===focusTaskId); if(t) setFocusFromTask(t); else { timerSec=25*60; updateTimer(); }};
+
+/* ========== bulk actions ========== */
+$('#bulkDone').onclick=()=>{ tasks.forEach(t=>{ if(selectedIds.has(t.id)) t.status='DONE' }); save(KEY,tasks); render(); };
+$('#bulkUndo').onclick=()=>{ tasks.forEach(t=>{ if(selectedIds.has(t.id)) t.status='TODO' }); save(KEY,tasks); render(); };
+$('#bulkDel').onclick=()=>{ tasks=tasks.filter(t=>!selectedIds.has(t.id)); selectedIds.clear(); save(KEY,tasks); render(); buildMini(); buildBig(); };
+
+/* ========== switches & key handlers ========== */
+$('#switchList').onclick=()=>{ currentView='list'; render(); };
+$('#switchKanban').onclick=()=>{ currentView='kanban'; render(); };
+
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ closeAll(); } });
+function bindEnterSubmit(form){ form.addEventListener('keydown',(e)=>{ const isTA=e.target.tagName==='TEXTAREA'; if(e.key==='Enter' && (!isTA || (isTA && e.ctrlKey))){ e.preventDefault(); form.requestSubmit(); } }); }
+['#editForm','#createForm'].forEach(s=>{ const f=$(s); if(f) bindEnterSubmit(f); });
+
+/* ========== modal helpers ========== */
+function open(id){ document.getElementById(id).classList.add('open'); document.body.classList.add('no-scroll'); }
+function close(id){ document.getElementById(id).classList.remove('open'); const any=[...document.querySelectorAll('.modal')].some(m=>m.classList.contains('open')); if(!any) document.body.classList.remove('no-scroll'); }
+function closeAll(){ ['editModal','createModal'].forEach(id=> close(id)); }
+
+/* ========== init ========== */
+routeTo('home'); buildMini(); buildBig(); render();
 </script>
 </body>
 </html>
