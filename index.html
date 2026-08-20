@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b0f0e"><meta name="description" content="NexToText — sade, hızlı ve profesyonel günlük görev takip uygulaması">
+<title>NexToText — Görev Takibi</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div id="app" class="app-shell">
+  <aside id="sidebar" class="sidebar" aria-label="Ana menü">
+    <div class="brand"><span>Nex</span><b>To</b><span>Text</span></div>
+    <button class="new-task-btn" id="quickAdd"><span>＋</span> Yeni görev</button>
+    <nav class="nav-list">
+      <button class="nav-item active" data-view="calendar"><span class="nav-icon">▦</span> Takvim</button>
+      <button class="nav-item" data-view="today"><span class="nav-icon">◉</span> Bugün</button>
+      <button class="nav-item" data-view="reports"><span class="nav-icon">◒</span> Raporlar</button>
+    </nav>
+    <div class="sidebar-section">
+      <div class="section-label">Durum</div>
+      <button class="filter-item" data-filter="done"><i class="dot done"></i> Tamamlandı <span id="countDone">0</span></button>
+      <button class="filter-item" data-filter="progress"><i class="dot progress"></i> Süreçte <span id="countProgress">0</span></button>
+      <button class="filter-item" data-filter="missed"><i class="dot missed"></i> Tamamlanmadı <span id="countMissed">0</span></button>
+    </div>
+    <div class="sidebar-bottom">
+      <button class="side-action" id="openSettings">⚙ <span>Ayarlar</span></button>
+      <button class="side-action" id="exportData">⇩ <span>Yedekle</span></button>
+      <label class="side-action file-action">⇧ <span>İçe aktar</span><input id="importData" type="file" accept="application/json" hidden></label>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-left"><button class="icon-btn mobile-only" id="menuBtn" aria-label="Menüyü aç">☰</button><div class="page-title"><span id="pageEyebrow">Takvim</span><strong id="pageTitle">Aylık görünüm</strong></div></div>
+      <div class="topbar-center"><div class="logo"><span>Nex</span><b>To</b><span>Text</span></div></div>
+      <div class="topbar-right"><button class="today-btn" id="todayBtn">Bugün</button><button class="icon-btn" id="themeBtn" aria-label="Temayı değiştir">☾</button><div class="avatar">NT</div></div>
+    </header>
+
+    <section class="content">
+      <div id="calendarView" class="view active-view">
+        <div class="calendar-toolbar">
+          <div class="month-nav"><button class="icon-btn" id="prevMonth" aria-label="Önceki ay">‹</button><button class="icon-btn" id="nextMonth" aria-label="Sonraki ay">›</button><h1 id="monthLabel">Ağustos 2026</h1></div>
+          <div class="toolbar-actions"><button class="select-btn" id="viewSelect">Ay görünümü <span>⌄</span></button></div>
+        </div>
+        <div class="summary-row">
+          <div class="summary-card"><span>Toplam görev</span><strong id="monthTotal">0</strong><small>Bu ay</small></div>
+          <div class="summary-card"><span>Tamamlanma</span><strong id="monthRate">0%</strong><small id="monthRateText">Henüz görev yok</small></div>
+          <div class="summary-card accent"><span>Bugünün odağı</span><strong id="todayFocus">0</strong><small>aktif görev</small></div>
+        </div>
+        <div class="calendar-wrap card">
+          <div class="weekdays"><div>Pzt</div><div>Sal</div><div>Çar</div><div>Per</div><div>Cum</div><div>Cmt</div><div>Paz</div></div>
+          <div id="calendarGrid" class="calendar-grid" role="grid" aria-label="Aylık takvim"></div>
+        </div>
+      </div>
+
+      <div id="todayView" class="view"><div class="section-head"><div><span class="eyebrow">Bugün</span><h1 id="todayHeading">Bugünün görevleri</h1></div><button class="primary-btn" id="todayAdd">＋ Görev ekle</button></div><div id="todayContent" class="today-layout"></div></div>
+      <div id="reportsView" class="view"><div class="section-head"><div><span class="eyebrow">Performans</span><h1>Raporlar</h1></div></div><div id="reportsContent" class="reports-grid"></div></div>
+    </section>
+  </main>
+</div>
+
+<div id="overlay" class="overlay"></div>
+<aside id="dayDrawer" class="drawer" aria-label="Gün detayları"><div class="drawer-head"><div><span class="eyebrow" id="drawerEyebrow">Gün</span><h2 id="drawerTitle">—</h2></div><button class="icon-btn" id="closeDrawer" aria-label="Kapat">×</button></div><div class="drawer-body"><div class="day-status-card"><div><span>Günün durumu</span><strong id="drawerStatus">—</strong></div><div class="status-ring" id="statusRing">0%</div></div><div class="task-section-head"><h3>Görevler</h3><span id="drawerTaskCount">0</span></div><div id="taskList" class="task-list"></div><div id="addTaskArea" class="add-task-area"><input id="taskInput" maxlength="120" placeholder="Görev adı…"><button class="primary-btn" id="addTaskBtn">Ekle</button></div><p id="readOnlyNote" class="muted-note">Bu tarih salt okunur. Yalnızca bugün düzenlenebilir.</p></div></aside>
+
+<div id="settingsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle"><div class="modal-card"><div class="modal-head"><div><span class="eyebrow">Tercihler</span><h2 id="settingsTitle">Ayarlar</h2></div><button class="icon-btn" data-close-modal>×</button></div><div class="settings-grid"><label>Varsayılan görev şablonu<textarea id="templateInput" rows="4" placeholder="Her satıra bir görev yazabilirsin…"></textarea></label><label>Hafta başlangıcı<select id="weekStart"><option value="monday">Pazartesi</option><option value="sunday">Pazar</option></select></label><label>Tema<select id="themeSelect"><option value="system">Sistem</option><option value="light">Açık</option><option value="dark">Koyu</option></select></label></div><div class="modal-actions"><button class="secondary-btn" data-close-modal>Vazgeç</button><button class="primary-btn" id="saveSettings">Kaydet</button></div></div></div>
+
+<div id="toast" class="toast" role="status"></div>
+<script src="assets/app.js"></script>
+</body></html>
